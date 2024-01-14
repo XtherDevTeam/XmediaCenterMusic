@@ -11,6 +11,7 @@ import {
   adaptNavigationTheme,
   PaperProvider,
   useTheme,
+  Icon,
 } from 'react-native-paper';
 import {
   DarkTheme as NavigationDarkTheme,
@@ -20,30 +21,50 @@ import Home from './pages/Home';
 import { useEffect } from 'react';
 
 import * as storage from './shared/storage'
+import axios from 'axios';
+import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
+import Profile from './pages/Profile';
+import Music from './pages/Music';
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme
 });
 
-
 const Stack = createNativeStackNavigator()
+const Tab = createMaterialBottomTabNavigator()
+
+function MainPage({ }) {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen name="Home" options={{
+        tabBarIcon: "home"
+      }} component={Home} />
+      <Tab.Screen  options={{
+        tabBarIcon: "music"
+      }}  name="Music" component={Music} />
+      <Tab.Screen  options={{
+        tabBarIcon: "account-circle"
+      }}  name="Profile" component={Profile} />
+    </Tab.Navigator>
+  )
+}
 
 export default function App() {
   const scheme = useColorScheme()
   console.log(scheme)
-  
   return (
     <PaperProvider theme={mdTheme()}>
       <SafeAreaProvider>
         <NavigationContainer theme={scheme === 'dark' ? DarkTheme : LightTheme}>
-          <Stack.Navigator>
-            <Stack.Screen name="SignIn" options={{ headerShown: false }} component={
+
+          <Stack.Navigator initialRouteName='MainPage'>
+            <Stack.Screen name="SignIn" options={{ headerShown: false, tabBarVisible: false }} component={
               SignIn
             }
             />
-            <Stack.Screen name="Home" options={{ headerShown: false }} component={
-              Home
+            <Stack.Screen name="MainPage" options={{ headerShown: false }} component={
+              MainPage
             }
             />
           </Stack.Navigator>

@@ -56,7 +56,7 @@ function info() {
   return axios.get(`${storageUrl}/api/xms/v1/info`)
 }
 
-function signOut(path) {
+function signOut() {
   return axios.post(`${storageUrl}/api/xms/v1/signout`,)
 }
 
@@ -94,6 +94,14 @@ function userAvatarUpdate(data) {
 
 function userHeadImgUpdate(data) {
   return axios.post(`${storageUrl}/api/xms/v1/user/headimg/update`, data)
+}
+
+function userHeadImgUrl(uid) {
+  return `${storageUrl}/api/xms/v1/user/${uid}/headimg`
+}
+
+function userAvatarUrl(uid) {
+  return `${storageUrl}/api/xms/v1/user/${uid}/avatar`
 }
 
 function getDownloadPath(path) {
@@ -206,8 +214,8 @@ function userTasks() {
   return axios.get(`${storageUrl}/api/xms/v1/user/tasks`)
 }
 
-function getShareLinkPath(location, linkId) {
-  return `${location.protocol}//${location.host}/sharelink/${linkId}`
+function getShareLinkPath(linkId) {
+  return `${storageUrl}/sharelink/${linkId}`
 }
 
 function musicPlaylistSongsInsert(playlistId, path) {
@@ -305,5 +313,6 @@ export {
   getMusicPlaylistSongsFileSrc, getPlayTimeStr, musicPlaylistEdit, shareLinkInfo,
   getShareLinkFilePath, getShareLinkDirFilePath, shareLinkDir, userTasks, infoPlugins,
   taskCreate, taskInfo, taskDelete, config, configUpdate, info, userManageDelete,
-  userManageUpdateLevel, userManageList, userManageCreate, refreshStorageUrl
+  userManageUpdateLevel, userManageList, userManageCreate, refreshStorageUrl,
+  userAvatarUrl, userHeadImgUrl
 }
