@@ -25,6 +25,8 @@ import axios from 'axios';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import Profile from './pages/Profile';
 import Music from './pages/Music';
+import Player from './pages/PlaylistView';
+import PlaylistView from './pages/PlaylistView';
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -61,6 +63,10 @@ export default function App() {
           <Stack.Navigator initialRouteName='MainPage'>
             <Stack.Screen name="SignIn" options={{ headerShown: false, tabBarVisible: false }} component={
               SignIn
+            }
+            />
+            <Stack.Screen name="PlaylistView" options={{ headerShown: false, tabBarVisible: false }} component={
+              PlaylistView
             }
             />
             <Stack.Screen name="MainPage" options={{ headerShown: false }} component={

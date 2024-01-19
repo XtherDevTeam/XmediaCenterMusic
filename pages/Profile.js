@@ -55,7 +55,7 @@ const Profile = ({ navigation, route }) => {
     }, [])
   )
   React.useEffect(() => {
-    if (userInfo !== {}) {
+    if (userInfo !== {} && userInfo !== undefined) {
       Api.userShareLinks(userInfo.id).then(data => {
         if (data.data.ok) {
           console.log(data.data.data)
