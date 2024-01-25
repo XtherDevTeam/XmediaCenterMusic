@@ -123,7 +123,8 @@ function getPlaylistArtworkPath(pid) {
 }
 
 function getSongArtworkPath(sid) {
-  return `${storageUrl}/api/xms/v1/music/song/${sid}/artwork`
+  return `${storageUrl}/api/xms/v1/mobile/music/song/${sid}/artwork?session=${
+    encodeURIComponent(session)}`
 }
 
 function musicPlaylistCreate(name, description) {

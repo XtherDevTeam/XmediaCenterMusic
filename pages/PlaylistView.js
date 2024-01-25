@@ -92,6 +92,7 @@ const PlaylistView = ({ navigation, route }) => {
   }, [playlist])
 
   let covertPlaylistAsRntpStyle = (p) => {
+    console.log("what the heck")
     let rntpStyle = []
     p.forEach((i, j) => {
       rntpStyle.push({
@@ -99,7 +100,7 @@ const PlaylistView = ({ navigation, route }) => {
         title: i.info.title,
         artist: i.info.artist,
         album: i.info.album,
-        artwork: Api.getPlaylistArtworkPath(i.id),
+        artwork: Api.getSongArtworkPath(i.id),
         genre: 'Powered by xiaokang00010 with Naganohara Yoimiya',
         url: Api.getMusicPlaylistSongsFileSrc(playlist.id, i.id),
         duration: i.info.length,

@@ -14,7 +14,8 @@ import * as Api from '../shared/api';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import Message from '../components/Message';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
-import rntp, {State, useActiveTrack} from 'react-native-track-player';
+import rntp, { State, useActiveTrack } from 'react-native-track-player';
+import { BlurView } from '@react-native-community/blur'
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
@@ -94,11 +95,16 @@ const Profile = ({ navigation, route }) => {
         <>
           <ScrollView>
             <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-              {currentTrack !== undefined ? <Card  key={1145149191} style={{ width: "95%", marginBottom: 20 }} onPress={() => {
+              {currentTrack !== undefined ? <Card key={1145149191} style={{ width: "95%", marginBottom: 20 }} onPress={() => {
                 navigation.navigate('Player', {})
               }} onLongPress={() => {
 
               }}>
+                <BlurView
+                  blurType="light"
+                  blurAmount={10}
+                  reducedTransparencyFallbackColor="white"
+                />
                 <Card.Content style={{ marginTop: 15 }}>
                   <Text variant="titleLarge">{currentTrack.title} · Now playing</Text>
                   <Text variant="bodyMedium">{currentTrack.album}</Text>
