@@ -14,12 +14,14 @@ import * as Api from '../shared/api';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import Message from '../components/Message';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
+import rntp, {State, useActiveTrack} from 'react-native-track-player';
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
 const Profile = ({ navigation, route }) => {
   let [userInfo, setUserInfo] = React.useState({})
   let [playlists, setPlaylists] = React.useState([])
+  let currentTrack = useActiveTrack()
   const [messageState, setMessageState] = React.useState(false)
   const [messageText, setMessageText] = React.useState("")
   const theme = mdTheme()
@@ -92,8 +94,19 @@ const Profile = ({ navigation, route }) => {
         <>
           <ScrollView>
             <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+              {currentTrack !== undefined ? <Card  key={1145149191} style={{ width: "95%", marginBottom: 20 }} onPress={() => {
+                navigation.navigate('Player', {})
+              }} onLongPress={() => {
+
+              }}>
+                <Card.Content style={{ marginTop: 15 }}>
+                  <Text variant="titleLarge">Now playing</Text>
+                  <Text variant="bodyMedium">{crrentTrack.title}</Text>
+                </Card.Content>
+              </Card> : <></>}
+
               {playlists.map(item => <Card key={item.id} style={{ width: "95%", marginBottom: 20 }} onPress={() => {
-                navigation.navigate('PlaylistView', {playlist: item})
+                navigation.navigate('PlaylistView', { playlist: item })
               }} onLongPress={() => {
 
               }}>

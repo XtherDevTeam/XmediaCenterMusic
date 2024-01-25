@@ -23,10 +23,20 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "userInterfaceStyle": "automatic"
+      "permissions": [
+        "android.permission.FOREGROUND_SERVICE"
+      ],
+      "userInterfaceStyle": "automatic",
+      "package": "com.jerrychau.XmediaCenterMusic"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "29912d14-98cc-45ad-94dc-aaafc5b21f6b"
+      }
+    },
+    "owner": "jerrychau"
   }
 }

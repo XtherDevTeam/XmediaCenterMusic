@@ -2,6 +2,9 @@ import axios from "axios"
 import * as storage from "./storage"
 
 let storageUrl = ""
+let session = ""
+
+
 
 function refreshStorageUrl() {
   storage.inquireItem("serverAddress", (r, v) => {
@@ -9,6 +12,13 @@ function refreshStorageUrl() {
       storageUrl = null
     } else {
       storageUrl = v
+    }
+  })
+  storage.inquireItem("loginSession", (r, v) => {
+    if (!r) {
+      session = ''
+    } else {
+      session = v
     }
   })
 }
@@ -178,7 +188,15 @@ function submitLogin(username, password) {
   }).then(
     (r) => {
       if (r.ok) {
-        return axios.post(`${storageUrl}/api/xms/v1/signin`, { "username": username, "password": password })
+        return axios.post(`${storageUrl}/api/xms/v1/signin`, { "username": username, "password": password }, {withCredentials: true}).then(r => {
+          r.headers["set-cookie"].at(0).split(";").forEach((i, j) => {
+            if (i.trim().substring(0, i.indexOf('=')) == 'session') {
+              session = i.trim().substring(i.indexOf('=') + 1)
+              storage.setItem('loginSession', session, r => {})
+            }
+          })
+          return r
+        })
       } else {
         return {data: r}
       }
@@ -235,7 +253,8 @@ function musicPlaylistSongsSwap(playlistId, src, dest) {
 }
 
 function getMusicPlaylistSongsFileSrc(playlistId, songId) {
-  return `${storageUrl}/api/xms/v1/music/playlist/${playlistId}/songs/${songId}/file`
+  return `${storageUrl}/api/xms/v1/mobile/music/playlist/${playlistId}/songs/${songId}/file?session=${
+    encodeURIComponent(session)}`
 }
 
 function musicPlaylistEdit(playlistId, name, description) {

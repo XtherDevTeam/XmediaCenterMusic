@@ -22,6 +22,7 @@ import {
 import Music from './Music';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignIn from './SignIn';
+import * as playerBackend from '../shared/playerBackend';
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme
@@ -36,6 +37,7 @@ const PlaylistView = ({ navigation, route }) => {
   const [messageText, setMessageText] = React.useState("")
   let [playlist, setPlaylist] = React.useState(route.params.playlist)
   let [playlistSongs, setPlaylistSongs] = React.useState([])
+  let rntpStylePlaylist = React.useRef([])
   let theme = mdTheme()
 
   React.useEffect(() => {
@@ -80,13 +82,31 @@ const PlaylistView = ({ navigation, route }) => {
     Api.musicPlaylistSongs(playlist.id).then(data => {
       if (data.data.ok) {
         setPlaylistSongs(data.data.data)
-        console.log(data.data.data)
+        rntpStylePlaylist.current = covertPlaylistAsRntpStyle(data.data.data)
+        console.log(rntpStylePlaylist.current)
       } else {
         setMessageText(`Error querying playlist songs: NetworkError`)
         setMessageState(true)
       }
     })
   }, [playlist])
+
+  let covertPlaylistAsRntpStyle = (p) => {
+    let rntpStyle = []
+    p.forEach((i, j) => {
+      rntpStyle.push({
+        id: i.id,
+        title: i.info.title,
+        artist: i.info.artist,
+        album: i.info.album,
+        artwork: Api.getPlaylistArtworkPath(i.id),
+        genre: 'Powered by xiaokang00010 with Naganohara Yoimiya',
+        url: Api.getMusicPlaylistSongsFileSrc(playlist.id, i.id),
+        duration: i.info.length,
+      })
+    })
+    return rntpStyle
+  }
 
   let signOut = () => {
     Api.signOut().then((r) => {
@@ -137,8 +157,10 @@ const PlaylistView = ({ navigation, route }) => {
                     <DataTable.Title>Title</DataTable.Title>
                     <DataTable.Title numeric>Artist</DataTable.Title>
                   </DataTable.Header>
-                  {playlistSongs.map((item) => (
-                    <DataTable.Row key={item.id} onPress={() => { }}>
+                  {playlistSongs.map((item, idx) => (
+                    <DataTable.Row key={item.id} onPress={() => {
+                      playerBackend.setCurrentTrack(rntpStylePlaylist.current, idx, true)
+                    }}>
                       <DataTable.Cell>{item.info.title}</DataTable.Cell>
                       <DataTable.Cell numeric>{item.info.artist}</DataTable.Cell>
                     </DataTable.Row>
