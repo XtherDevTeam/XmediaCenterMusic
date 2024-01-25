@@ -2,38 +2,42 @@ import rntp, { State, Capability, AppKilledPlaybackBehavior } from 'react-native
 import playbackService from './playbackService'
 
 function setup() {
-  rntp.setupPlayer({
-    // Media controls capabilities
-    capabilities: [
-      Capability.Play,
-      Capability.Pause,
-      Capability.SkipToNext,
-      Capability.SkipToPrevious,
-      Capability.Stop,
-    ],
-    notificationCapabilities: [
-      Capability.Play,
-      Capability.Pause,
-      Capability.SkipToNext,
-      Capability.SkipToPrevious,
-    ],
+  (async () => {
+    await rntp.setupPlayer()
+    await rntp.updateOptions({
+      // Media controls capabilities
+      capabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.SkipToNext,
+        Capability.SkipToPrevious,
+        Capability.Stop,
+      ],
+      notificationCapabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.SkipToNext,
+        Capability.SkipToPrevious,
+        Capability.SeekTo,
+      ],
 
-    // Capabilities that will show up when the notification is in the compact form on Android
-    compactCapabilities: [
-      Capability.Play,
-      Capability.Pause,
-      Capability.Stop,
-      Capability.SkipToNext,
-      Capability.SkipToPrevious,
-      Capability.SeekTo,
-    ],
+      // Capabilities that will show up when the notification is in the compact form on Android
+      compactCapabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.Stop,
+        Capability.SkipToNext,
+        Capability.SkipToPrevious,
+        Capability.SeekTo,
+      ],
 
-    android: {
-      // This is the default behavior
-      appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback
-    },
-  }).catch(err => { })
-  rntp.registerPlaybackService(() => playbackService)
+      android: {
+        // This is the default behavior
+        appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
+        stoppingAppPausesPlayback: true
+      },
+    })
+  })()
 }
 
 function setPlayQueue() {
@@ -42,19 +46,17 @@ function setPlayQueue() {
 
 function setCurrentTrack(songs, index, playAfter) {
   return rntp.setQueue(songs).then(() => {
-    rntp.getTrack(index).then((track) => {
-      rntp.load(track).then(() => {
-        if (playAfter) {
-          play().then(() => {
-            console.log("???")
-            rntp.getPlaybackState().then((v) => {
-              console.log(v)
-            })
-          }).catch((reason) => {
-            console.log(reason)
+    rntp.skip(index).then(() => {
+      if (playAfter) {
+        play().then(() => {
+          console.log("???")
+          rntp.getPlaybackState().then((v) => {
+            console.log(v)
           })
-        }
-      })
+        }).catch((reason) => {
+          console.log(reason)
+        })
+      }
     })
   })
 }

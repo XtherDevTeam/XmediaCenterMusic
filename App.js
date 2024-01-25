@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, Image, useColorScheme, AppRegistry } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import SignIn from './pages/SignIn';
@@ -36,8 +36,6 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 
 const Stack = createNativeStackNavigator()
 const Tab = createMaterialBottomTabNavigator()
-
-playerBackend.setup()
 
 function MainPage({ }) {
   return (

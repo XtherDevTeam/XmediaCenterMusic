@@ -100,8 +100,9 @@ const Profile = ({ navigation, route }) => {
 
               }}>
                 <Card.Content style={{ marginTop: 15 }}>
-                  <Text variant="titleLarge">Now playing</Text>
-                  <Text variant="bodyMedium">{crrentTrack.title}</Text>
+                  <Text variant="titleLarge">{currentTrack.title} · Now playing</Text>
+                  <Text variant="bodyMedium">{currentTrack.album}</Text>
+                  <Text variant="bodyMedium">{currentTrack.artist}</Text>
                 </Card.Content>
               </Card> : <></>}
 

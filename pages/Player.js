@@ -16,81 +16,90 @@ import Message from '../components/Message';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import Profile from './Profile';
 import {
-    DarkTheme as NavigationDarkTheme,
-    DefaultTheme as NavigationDefaultTheme,
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationDefaultTheme,
 } from '@react-navigation/native';
 import Music from './Music';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignIn from './SignIn';
+import { useActiveTrack } from 'react-native-track-player';
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
-    reactNavigationLight: NavigationDefaultTheme,
-    reactNavigationDark: NavigationDarkTheme
+  reactNavigationLight: NavigationDefaultTheme,
+  reactNavigationDark: NavigationDarkTheme
 });
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
 const Player = ({ navigation, route }) => {
 
-    let [userInfo, setUserInfo] = React.useState({})
-    const [messageState, setMessageState] = React.useState(false)
-    const [messageText, setMessageText] = React.useState("")
+  let [userInfo, setUserInfo] = React.useState({})
+  const [messageState, setMessageState] = React.useState(false)
+  const [messageText, setMessageText] = React.useState("")
+  let currentTrack = useActiveTrack()
 
-    React.useEffect(() => {
-        storage.inquireItem('loginStatus', (result, v) => {
-            if (!result) {
-                navigation.navigate('SignIn', { initialPage: true })
+  React.useEffect(() => {
+    storage.inquireItem('loginStatus', (result, v) => {
+      if (!result) {
+        navigation.navigate('SignIn', { initialPage: true })
+      }
+      Api.checkIfLoggedIn().then((data) => {
+        if (data.data.ok) {
+          let uid = data.data.data.uid
+          Api.userInfo(uid).then((data) => {
+            if (data.data.ok) {
+              setUserInfo(data.data.data)
+            } else {
+              setMessageText(`Error querying user information: ${data.data.data}`)
+              setMessageState(true)
             }
-            Api.checkIfLoggedIn().then((data) => {
-                if (data.data.ok) {
-                    let uid = data.data.data.uid
-                    Api.userInfo(uid).then((data) => {
-                        if (data.data.ok) {
-                            setUserInfo(data.data.data)
-                        } else {
-                            setMessageText(`Error querying user information: ${data.data.data}`)
-                            setMessageState(true)
-                        }
-                    }).catch((err) => {
-                        setMessageText(`Error querying user information: NetworkError`)
-                        setMessageState(true)
-                    })
-                }
-            }).catch((e) => {
-                setMessageText(`Error querying user information: NetworkError`)
-                setMessageState(true)
-            })
-        })
-    }, [navigation])
-
-    let signOut = () => {
-        Api.signOut().then((r) => {
-            if (r.data.ok) {
-                storage.removeItem('loginStatus', (r) => { })
-            }
-            navigation.navigate('SignIn', { initialPage: true })
-        }).catch(e => {
-            setMessageText(`Error signing out: ${e.data.data}`)
+          }).catch((err) => {
+            setMessageText(`Error querying user information: NetworkError`)
             setMessageState(true)
-        })
-    }
+          })
+        }
+      }).catch((e) => {
+        setMessageText(`Error querying user information: NetworkError`)
+        setMessageState(true)
+      })
+    })
+  }, [navigation])
 
-    return (
-        <PaperProvider theme={mdTheme()}>
-            <>
-                <Appbar.Header>
-                    <Appbar.BackAction onPress={() => navigation.goBack()} />
-                    <Appbar.Content title="Player"></Appbar.Content>
-                </Appbar.Header>
-                <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
-                    <>
-                        <Portal>
-                            <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
-                        </Portal>
-                    </>
-                </TouchableWithoutFeedback >
-            </>
-        </PaperProvider>
-    )
+  React.useEffect(() => {
+    if (currentTrack === undefined) {
+      
+    }
+  }, [currentTrack])
+
+  let signOut = () => {
+    Api.signOut().then((r) => {
+      if (r.data.ok) {
+        storage.removeItem('loginStatus', (r) => { })
+      }
+      navigation.navigate('SignIn', { initialPage: true })
+    }).catch(e => {
+      setMessageText(`Error signing out: ${e.data.data}`)
+      setMessageState(true)
+    })
+  }
+
+  return (
+    <PaperProvider theme={mdTheme()}>
+      <>
+        <Appbar.Header>
+          <Appbar.BackAction onPress={() => navigation.goBack()} />
+          <Appbar.Content title="Player"></Appbar.Content>
+        </Appbar.Header>
+        <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
+          <>
+
+            <Portal>
+              <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
+            </Portal>
+          </>
+        </TouchableWithoutFeedback >
+      </>
+    </PaperProvider>
+  )
 };
 
 
