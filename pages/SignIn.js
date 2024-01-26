@@ -12,6 +12,7 @@ import { mdTheme } from '../shared/styles';
 import * as storage from '../shared/storage';
 import Message from '../components/Message';
 import * as Api from '../shared/api';
+import rntp from 'react-native-track-player';
 
 const SignIn = ({ navigation, route }) => {
   const serverAddressRef = React.useRef(null)
@@ -43,6 +44,10 @@ const SignIn = ({ navigation, route }) => {
         setUsernameState(v)
       }
     })
+    storage.removeItem('loginSession', r => {})
+    storage.removeItem('loginStatus', r => {})
+    Api.refreshStorageUrl()
+    rntp.setQueue([])
   }, [])
   React.useEffect(() => {
     if (route.params.hasOwnProperty('initialPage') === true) {

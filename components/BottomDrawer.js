@@ -31,8 +31,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingBottom: Platform.OS === 'ios' ? 100 : 0,
+    paddingBottom: Platform.OS === 'ios' ? 95 : 0,
   },
   bottomDrawer: {
     height: '50%',

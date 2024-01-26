@@ -339,5 +339,5 @@ export {
   getShareLinkFilePath, getShareLinkDirFilePath, shareLinkDir, userTasks, infoPlugins,
   taskCreate, taskInfo, taskDelete, config, configUpdate, info, userManageDelete,
   userManageUpdateLevel, userManageList, userManageCreate, refreshStorageUrl,
-  userAvatarUrl, userHeadImgUrl
+  userAvatarUrl, userHeadImgUrl, 
 }

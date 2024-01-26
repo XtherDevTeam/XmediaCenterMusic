@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Appbar, DataTable, Drawer, Icon, IconButton, PaperProvider, Portal, adaptNavigationTheme, withTheme } from 'react-native-paper';
+import { Appbar, DataTable, Drawer, Icon, IconButton, PaperProvider, Portal, Surface, adaptNavigationTheme, withTheme } from 'react-native-paper';
 import { Banner } from 'react-native-paper';
 import { Image, ImageBackground, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -22,7 +22,7 @@ import {
 import Music from './Music';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignIn from './SignIn';
-import TrackPlayer, { Event, State, useActiveTrack, useIsPlaying, useProgress } from 'react-native-track-player';
+import TrackPlayer, { Event, RepeatMode, State, useActiveTrack, useIsPlaying, useProgress } from 'react-native-track-player';
 import BottomDrawer from '../components/BottomDrawer';
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -31,9 +31,14 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 import Slide from '@react-native-assets/slider'
 import { formatDuraton } from '../shared/playerBackend';
 
-const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
+const MORE_ICON = 'dots-vertical';
 
 const Player = ({ navigation, route }) => {
+  let [repeatMode, setRepeatMode] = React.useState({
+    icon: 'repeat-off',
+    index: 0
+  })
+  let [currentVolume, setCurrentVolume] = React.useState(0.5)
   let isPlaying = useIsPlaying()
   let currentProgress = useProgress()
   let [currentProgressStr, setCurrentProgressStr] = React.useState(['00:00', '00:00'])
@@ -45,7 +50,7 @@ const Player = ({ navigation, route }) => {
   let currentTrack = useActiveTrack()
 
   React.useEffect(() => {
-    setCurrentProgressStr([formatDuraton(currentProgress.position), formatDuraton(currentProgress.duration)])
+    setCurrentProgressStr([formatDuraton(currentProgress.position), '-' + formatDuraton(currentProgress.duration - currentProgress.position)])
   }, [currentProgress])
 
   React.useEffect(() => {
@@ -81,7 +86,32 @@ const Player = ({ navigation, route }) => {
     TrackPlayer.getQueue().then((q) => {
       setCurrentQueue(q)
     })
+    TrackPlayer.getRepeatMode().then(q => {
+      if (q == RepeatMode.Off) {
+        setRepeatMode({
+          icon: 'repeat-off',
+          index: 0,
+        })
+      } else if (q == RepeatMode.Queue) {
+        setRepeatMode({
+          icon: 'repeat',
+          index: 1,
+        })
+      } else if (q == RepeatMode.Track) {
+        setRepeatMode({
+          icon: 'repeat-once',
+          index: 2,
+        })
+      }
+    })
+    TrackPlayer.getVolume().then(v => {
+      setCurrentVolume(v)
+    })
   }, [currentTrack])
+
+  React.useEffect(() => {
+    TrackPlayer.setVolume(currentVolume)
+  }, [currentVolume])
 
   let signOut = () => {
     Api.signOut().then((r) => {
@@ -104,7 +134,7 @@ const Player = ({ navigation, route }) => {
 
         {currentTrack !== undefined && <ImageBackground src={currentTrack.artwork} style={{ borderRadius: theme.roundness / 0.35, overflow: 'hidden' }} blurRadius={20}>
 
-          <View style={{ height: '100%', backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.50)' : 'rgba(255, 255, 255, 0.50)' }}>
+          <View style={{ height: '100%', backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255, 255, 255, 0.65)' }}>
             <Appbar.Header style={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}>
               <Appbar.BackAction onPress={() => navigation.goBack()} />
               <Appbar.Content title="Player"></Appbar.Content>
@@ -113,25 +143,27 @@ const Player = ({ navigation, route }) => {
               <>
                 {/* Player controls */}
                 <View style={{ marginTop: 16, padding: 20, height: '100%', alignItems: 'center' }}>
-                  <Image
-                    source={{ uri: currentTrack.artwork }}
-                    style={{ width: '80%', aspectRatio: 1, borderRadius: 10 }}
-                  />
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 8 }}>
+                  <Surface elevation={4} style={{width: '80%', borderRadius: theme.roundness / 0.35}}>
+                    <Image
+                      source={{ uri: currentTrack.artwork }}
+                      style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
+                    />
+                  </Surface>
+                  <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16 }}>
                     {currentTrack.title == '' ? '<unknown>' : currentTrack.title}
                   </Text>
-                  <Text style={{ fontSize: 16, color: 'gray', marginTop: 4 }}>
+                  <Text style={{ fontSize: 16, color: theme.colors.secondary, marginTop: 4 }}>
                     {currentTrack.artist == '' ? '<unknown>' : currentTrack.artist}
                   </Text>
                   {/* Progress bar */}
                   <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-                    <Text style={{ marginTop: 13 }} variant='labelMedium'>{currentProgressStr[0]}</Text>
+                    <Text style={{ marginTop: 13, width: 45 }} variant='labelMedium'>{currentProgressStr[0]}</Text>
                     <View style={{ flex: 1 }}>
-                      <Slide value={currentProgress.position} minimumValue={0} maximumValue={currentProgress.duration} step={1} style={{ marginHorizontal: 16, marginTop: 16 }} onValueChange={(v) => {
+                      <Slide thumbTintColor={theme.colors.primary} value={currentProgress.position} minimumValue={0} maximumValue={currentProgress.duration} step={1} style={{ marginHorizontal: 16, marginTop: 16 }} onValueChange={(v) => {
                         TrackPlayer.seekTo(v)
                       }}></Slide>
                     </View>
-                    <Text style={{ marginTop: 13 }} variant='labelMedium'>{currentProgressStr[1]}</Text>
+                    <Text style={{ marginTop: 13, width: 45 }} variant='labelMedium'>{currentProgressStr[1]}</Text>
                   </View>
 
                   {/* Player controls (play, pause, skip) */}
@@ -143,10 +175,23 @@ const Player = ({ navigation, route }) => {
                     }}
                   >
                     <IconButton
+                      icon={repeatMode.icon}
+                      onPress={() => {
+                        repeatMode.index = (repeatMode.index + 1) % 3;
+                        TrackPlayer.setRepeatMode(([RepeatMode.Off, RepeatMode.Queue, RepeatMode.Track])[repeatMode.index])
+                        setRepeatMode({
+                          icon: (['repeat-off', 'repeat', 'repeat-once'])[repeatMode.index],
+                          index: repeatMode.index
+                        })
+                      }}
+                      size={32}
+                    />
+                    <IconButton
                       icon="skip-previous"
                       onPress={() => {
                         TrackPlayer.skipToPrevious().then(() => TrackPlayer.play())
                       }}
+                      size={32}
                     />
                     <IconButton
                       icon={isPlaying.playing ? "pause" : "play"}
@@ -160,13 +205,31 @@ const Player = ({ navigation, route }) => {
                           }
                         })
                       }}
+                      size={32}
                     />
                     <IconButton
                       icon="skip-next"
                       onPress={() => {
                         TrackPlayer.skipToNext().then(() => TrackPlayer.play())
                       }}
+                      size={32}
                     />
+                    <IconButton
+                      icon='playlist-play'
+                      onPress={() => {
+                        setPlayQueueState(true)
+                      }}
+                      size={32}
+                    />
+                  </View>
+                  <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                    <Text style={{ marginTop: 13, width: 16 }} variant='labelMedium'><Icon size={16} source="volume-minus" /></Text>
+                    <View style={{ flex: 1 }}>
+                      <Slide thumbTintColor={theme.colors.primary} value={currentVolume} minimumValue={0} maximumValue={1} step={0} style={{ marginHorizontal: 16, marginTop: 16 }} onValueChange={(v) => {
+                        setCurrentVolume(v)
+                      }}></Slide>
+                    </View>
+                    <Text style={{ marginTop: 13, width: 16 }} variant='labelMedium'><Icon size={16} source="volume-plus" /></Text>
                   </View>
                 </View>
 
