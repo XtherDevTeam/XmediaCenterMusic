@@ -161,6 +161,7 @@ const PlaylistView = ({ navigation, route }) => {
                   {playlistSongs.map((item, idx) => (
                     <DataTable.Row key={item.id} onPress={() => {
                       playerBackend.setCurrentTrack(rntpStylePlaylist.current, idx, true)
+                      navigation.navigate('Player', {})
                     }}>
                       <DataTable.Cell>{item.info.title}</DataTable.Cell>
                       <DataTable.Cell numeric>{item.info.artist}</DataTable.Cell>

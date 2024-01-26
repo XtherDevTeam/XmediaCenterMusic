@@ -103,7 +103,7 @@ const Profile = ({ navigation, route }) => {
                 console.log(playerState)
               }}>
                 <ImageBackground src={currentTrack.artwork} style={{ borderRadius: theme.roundness / 0.35, overflow: 'hidden' }} blurRadius={20}>
-                  <Card.Content style={{ backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.50)' : 'rgba(255, 255, 255, 0.50)' }}>
+                  <Card.Content style={{ backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.60)' : 'rgba(255, 255, 255, 0.60)' }}>
                     <Text variant="titleLarge" style={{marginTop: 20}}>Now playing · {currentTrack.title}</Text>
                     <Text variant="bodyMedium">{currentTrack.album}</Text>
                     <Text variant="bodyMedium">{currentTrack.artist}</Text>

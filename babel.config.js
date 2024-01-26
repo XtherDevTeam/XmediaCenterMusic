@@ -4,8 +4,11 @@ module.exports = function (api) {
     presets: ['babel-preset-expo'],
     env: {
       production: {
-        plugins: ['react-native-paper/babel', 'react-native-reanimated/plugin',],
+        plugins: ['react-native-paper/babel'],
       },
+      development: {
+        plugins: ['react-native-reanimated/plugin']
+      }
     },
   };
 };

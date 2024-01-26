@@ -43,12 +43,12 @@ function MainPage({ }) {
       <Tab.Screen name="Home" options={{
         tabBarIcon: "home"
       }} component={Home} />
-      <Tab.Screen  options={{
+      <Tab.Screen options={{
         tabBarIcon: "music"
-      }}  name="Music" component={Music} />
-      <Tab.Screen  options={{
+      }} name="Music" component={Music} />
+      <Tab.Screen options={{
         tabBarIcon: "account-circle"
-      }}  name="Profile" component={Profile} />
+      }} name="Profile" component={Profile} />
     </Tab.Navigator>
   )
 }
@@ -57,30 +57,31 @@ export default function App() {
   const scheme = useColorScheme()
   console.log(scheme)
   return (
-    <PaperProvider theme={mdTheme()}>
-      <SafeAreaProvider>
-        <NavigationContainer theme={scheme === 'dark' ? DarkTheme : LightTheme}>
 
-          <Stack.Navigator initialRouteName='MainPage'>
-            <Stack.Screen name="SignIn" options={{ headerShown: false, tabBarVisible: false }} component={
-              SignIn
-            }
-            />
-            <Stack.Screen name="PlaylistView" options={{ headerShown: false, tabBarVisible: false }} component={
-              PlaylistView
-            }
-            />
-            <Stack.Screen name="Player" options={{ headerShown: false, tabBarVisible: false }} component={
-              Player
-            }
-            />
-            <Stack.Screen name="MainPage" options={{ headerShown: false }} component={
-              MainPage
-            }
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </PaperProvider>
+      <PaperProvider theme={mdTheme()}>
+        <SafeAreaProvider>
+          <NavigationContainer theme={scheme === 'dark' ? DarkTheme : LightTheme}>
+
+            <Stack.Navigator initialRouteName='MainPage'>
+              <Stack.Screen name="SignIn" options={{ headerShown: false, tabBarVisible: false }} component={
+                SignIn
+              }
+              />
+              <Stack.Screen name="PlaylistView" options={{ headerShown: false, tabBarVisible: false }} component={
+                PlaylistView
+              }
+              />
+              <Stack.Screen name="Player" options={{ headerShown: false, tabBarVisible: false }} component={
+                Player
+              }
+              />
+              <Stack.Screen name="MainPage" options={{ headerShown: false }} component={
+                MainPage
+              }
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </PaperProvider>
   );
 }
