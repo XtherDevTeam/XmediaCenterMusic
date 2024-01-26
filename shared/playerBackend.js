@@ -44,6 +44,34 @@ function setPlayQueue() {
   rntp.setQueue(songs)
 }
 
+function formatDuraton(time) {
+  if (time > -1) {
+    var hour = Math.floor(time / 3600);
+    var min = Math.floor(time / 60) % 60;
+    var sec = Math.floor(time % 60);
+    // console.log(hour, min, sec)
+    if (hour == 0) { 
+      // do nothing
+      time = ""
+    } else if (hour < 10) {
+      time = '0' + hour + ":";
+    } else {
+      time = hour + ":";
+    }
+
+    if (min < 10) {
+      time += "0";
+    }
+    time += min + ":";
+
+    if (sec < 10) {
+      time += "0";
+    }
+    time += sec;
+  }
+  return time;
+}
+
 function setCurrentTrack(songs, index, playAfter) {
   return rntp.setQueue(songs).then(() => {
     rntp.skip(index).then(() => {
@@ -68,4 +96,4 @@ function play() {
 
 }
 
-export { setPlayQueue, setCurrentTrack, play, setup }
+export { setPlayQueue, setCurrentTrack, play, setup, formatDuraton }

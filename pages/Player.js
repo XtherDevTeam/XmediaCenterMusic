@@ -22,26 +22,31 @@ import {
 import Music from './Music';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignIn from './SignIn';
-import TrackPlayer, { useActiveTrack, useIsPlaying } from 'react-native-track-player';
+import TrackPlayer, { Event, State, useActiveTrack, useIsPlaying, useProgress } from 'react-native-track-player';
 import BottomDrawer from '../components/BottomDrawer';
-import { Slider } from 'react-native-awesome-slider';
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme
 });
-
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Slide from '@react-native-assets/slider'
+import { formatDuraton } from '../shared/playerBackend';
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
 const Player = ({ navigation, route }) => {
   let isPlaying = useIsPlaying()
+  let currentProgress = useProgress()
+  let [currentProgressStr, setCurrentProgressStr] = React.useState(['00:00', '00:00'])
   let [currentQueue, setCurrentQueue] = React.useState([])
   let [userInfo, setUserInfo] = React.useState({})
   const [messageState, setMessageState] = React.useState(false)
   let [playQueueState, setPlayQueueState] = React.useState(false)
   const [messageText, setMessageText] = React.useState("")
   let currentTrack = useActiveTrack()
+
+  React.useEffect(() => {
+    setCurrentProgressStr([formatDuraton(currentProgress.position), formatDuraton(currentProgress.duration)])
+  }, [currentProgress])
 
   React.useEffect(() => {
     storage.inquireItem('loginStatus', (result, v) => {
@@ -107,66 +112,65 @@ const Player = ({ navigation, route }) => {
             <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
               <>
                 {/* Player controls */}
-                <View style={{ alignItems: 'center', marginTop: 16 }}>
+                <View style={{ marginTop: 16, padding: 20, height: '100%', alignItems: 'center' }}>
                   <Image
                     source={{ uri: currentTrack.artwork }}
-                    style={{ width: 200, height: 200, borderRadius: 10 }}
+                    style={{ width: '80%', aspectRatio: 1, borderRadius: 10 }}
                   />
                   <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 8 }}>
-                    {currentTrack.title}
+                    {currentTrack.title == '' ? '<unknown>' : currentTrack.title}
                   </Text>
                   <Text style={{ fontSize: 16, color: 'gray', marginTop: 4 }}>
-                    {currentTrack.artist}
+                    {currentTrack.artist == '' ? '<unknown>' : currentTrack.artist}
                   </Text>
+                  {/* Progress bar */}
+                  <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                    <Text style={{ marginTop: 13 }} variant='labelMedium'>{currentProgressStr[0]}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Slide value={currentProgress.position} minimumValue={0} maximumValue={currentProgress.duration} step={1} style={{ marginHorizontal: 16, marginTop: 16 }} onValueChange={(v) => {
+                        TrackPlayer.seekTo(v)
+                      }}></Slide>
+                    </View>
+                    <Text style={{ marginTop: 13 }} variant='labelMedium'>{currentProgressStr[1]}</Text>
+                  </View>
+
+                  {/* Player controls (play, pause, skip) */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      marginTop: 16,
+                    }}
+                  >
+                    <IconButton
+                      icon="skip-previous"
+                      onPress={() => {
+                        TrackPlayer.skipToPrevious().then(() => TrackPlayer.play())
+                      }}
+                    />
+                    <IconButton
+                      icon={isPlaying.playing ? "pause" : "play"}
+                      onPress={() => {
+                        console.log("WDNMD")
+                        TrackPlayer.getPlaybackState().then(v => {
+                          if (v.state === State.Playing) {
+                            TrackPlayer.pause()
+                          } else {
+                            TrackPlayer.play()
+                          }
+                        })
+                      }}
+                    />
+                    <IconButton
+                      icon="skip-next"
+                      onPress={() => {
+                        TrackPlayer.skipToNext().then(() => TrackPlayer.play())
+                      }}
+                    />
+                  </View>
                 </View>
 
-                {/* Progress bar */}
-                {/* <Slider
-                  style={{ marginHorizontal: 16, marginTop: 16 }}
-                  value={0.5} // Replace with actual progress value
-                  thumbSize={15}
-                  thumbTintColor={theme.colors.primary}
-                  maximumValue={1}
-                  step={0.01}
-                  onValueChange={(value) => {
-                    // Handle progress change
-                  }}
-                /> */}
-                <GestureHandlerRootView>
-                  <Slider
-                    progress={0}
-                    minimumValue={0}
-                    maximumValue={1}
-                  />
-                </GestureHandlerRootView>
 
-                {/* Player controls (play, pause, skip) */}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-around',
-                    marginTop: 16,
-                  }}
-                >
-                  <IconButton
-                    icon="skip-previous"
-                    onPress={() => {
-                      // Handle skip to previous
-                    }}
-                  />
-                  <IconButton
-                    icon={isPlaying ? "pause" : "play"}
-                    onPress={() => {
-                      // Handle play/pause
-                    }}
-                  />
-                  <IconButton
-                    icon="skip-next"
-                    onPress={() => {
-                      // Handle skip to next
-                    }}
-                  />
-                </View>
                 <BottomDrawer drawerTitle="Play queue" onClose={() => { setPlayQueueState(false) }} state={playQueueState}>
                   <ScrollView>
                     <DataTable>

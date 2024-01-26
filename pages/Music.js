@@ -15,7 +15,6 @@ import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import Message from '../components/Message';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import rntp, { State, useActiveTrack, usePlaybackState } from 'react-native-track-player';
-import { BlurView } from '@react-native-community/blur'
 import TrackPlayer from 'react-native-track-player';
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
@@ -59,7 +58,7 @@ const Profile = ({ navigation, route }) => {
   )
 
   React.useEffect(() => {
-    if (userInfo !== {}) {
+    if (userInfo != {}) {
       Api.userPlaylists().then(data => {
         if (data.data.ok) {
           console.log(data.data.data)

@@ -59,7 +59,12 @@ function basename(pathStr) {
 }
 
 function checkIfLoggedIn() {
-  return axios.get(`${storageUrl}/api/xms/v1/user/status`)
+  return axios.get(`${storageUrl}/api/xms/v1/user/status`).then(r => {
+    if (!r.data.ok) {
+      storage.removeItem('loginStatus', r => {})
+    }
+    return r
+  }).catch(r => {throw r})
 }
 
 function info() {
