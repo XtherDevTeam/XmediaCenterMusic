@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Appbar, Card, Drawer, Icon, PaperProvider, Portal, Surface, withTheme } from 'react-native-paper';
+import { Appbar, Card, Drawer, Icon, IconButton, PaperProvider, Portal, Surface, withTheme } from 'react-native-paper';
 import { Banner } from 'react-native-paper';
 import { Image, ImageBackground, Keyboard, Platform, ScrollView, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,8 +14,9 @@ import * as Api from '../shared/api';
 import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import Message from '../components/Message';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
-import rntp, { State, useActiveTrack } from 'react-native-track-player';
+import rntp, { State, useActiveTrack, usePlaybackState } from 'react-native-track-player';
 import { BlurView } from '@react-native-community/blur'
+import TrackPlayer from 'react-native-track-player';
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
@@ -23,6 +24,7 @@ const Profile = ({ navigation, route }) => {
   let [userInfo, setUserInfo] = React.useState({})
   let [playlists, setPlaylists] = React.useState([])
   let currentTrack = useActiveTrack()
+  let playerState = usePlaybackState()
   const [messageState, setMessageState] = React.useState(false)
   const [messageText, setMessageText] = React.useState("")
   const theme = mdTheme()
@@ -98,18 +100,42 @@ const Profile = ({ navigation, route }) => {
               {currentTrack !== undefined ? <Card key={1145149191} style={{ width: "95%", marginBottom: 20 }} onPress={() => {
                 navigation.navigate('Player', {})
               }} onLongPress={() => {
-
+                console.log(playerState)
               }}>
-                <BlurView
-                  blurType="light"
-                  blurAmount={10}
-                  reducedTransparencyFallbackColor="white"
-                />
-                <Card.Content style={{ marginTop: 15 }}>
-                  <Text variant="titleLarge">{currentTrack.title} · Now playing</Text>
-                  <Text variant="bodyMedium">{currentTrack.album}</Text>
-                  <Text variant="bodyMedium">{currentTrack.artist}</Text>
-                </Card.Content>
+                <ImageBackground src={currentTrack.artwork} style={{ borderRadius: theme.roundness / 0.35, overflow: 'hidden' }} blurRadius={20}>
+                  <Card.Content style={{ backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.50)' : 'rgba(255, 255, 255, 0.50)' }}>
+                    <Text variant="titleLarge" style={{marginTop: 20}}>Now playing · {currentTrack.title}</Text>
+                    <Text variant="bodyMedium">{currentTrack.album}</Text>
+                    <Text variant="bodyMedium">{currentTrack.artist}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                        <IconButton
+                          icon="skip-previous"
+                          size={25}
+                          onPress={() => {
+                            TrackPlayer.skipToPrevious().then(() => TrackPlayer.play())
+                          }}
+                        />
+                      </View>
+                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                        <IconButton
+                          icon={playerState.state === State.Playing ? "pause" : "play"}
+                          size={25}
+                          onPress={() => (playerState.state === State.Playing ? TrackPlayer.pause() : TrackPlayer.play())}
+                        />
+                      </View>
+                      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                        <IconButton
+                          icon="skip-next"
+                          size={25}
+                          onPress={() => {
+                            TrackPlayer.skipToNext().then(() => TrackPlayer.play())
+                          }}
+                        />
+                      </View>
+                    </View>
+                  </Card.Content>
+                </ImageBackground>
               </Card> : <></>}
 
               {playlists.map(item => <Card key={item.id} style={{ width: "95%", marginBottom: 20 }} onPress={() => {

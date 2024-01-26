@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { Appbar, Drawer, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme } from 'react-native-paper';
+import { Appbar, DataTable, Drawer, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme } from 'react-native-paper';
 import { Banner } from 'react-native-paper';
-import { Image, Keyboard, Platform, TouchableWithoutFeedback, useColorScheme } from 'react-native';
+import { Image, ImageBackground, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Text } from 'react-native-paper';
 import { Avatar } from 'react-native-paper';
@@ -22,7 +22,8 @@ import {
 import Music from './Music';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignIn from './SignIn';
-import { useActiveTrack } from 'react-native-track-player';
+import TrackPlayer, { useActiveTrack } from 'react-native-track-player';
+import BottomDrawer from '../components/BottomDrawer';
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme
@@ -32,8 +33,10 @@ const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
 const Player = ({ navigation, route }) => {
 
+  let [currentQueue, setCurrentQueue] = React.useState([])
   let [userInfo, setUserInfo] = React.useState({})
   const [messageState, setMessageState] = React.useState(false)
+  let [playQueueState, setPlayQueueState] = React.useState(false)
   const [messageText, setMessageText] = React.useState("")
   let currentTrack = useActiveTrack()
 
@@ -64,10 +67,12 @@ const Player = ({ navigation, route }) => {
     })
   }, [navigation])
 
+
+
   React.useEffect(() => {
-    if (currentTrack === undefined) {
-      
-    }
+    TrackPlayer.getQueue().then((q) => {
+      setCurrentQueue(q)
+    })
   }, [currentTrack])
 
   let signOut = () => {
@@ -82,21 +87,45 @@ const Player = ({ navigation, route }) => {
     })
   }
 
+  let theme = mdTheme()
+
   return (
     <PaperProvider theme={mdTheme()}>
       <>
-        <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="Player"></Appbar.Content>
-        </Appbar.Header>
-        <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
-          <>
-
-            <Portal>
-              <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
-            </Portal>
-          </>
-        </TouchableWithoutFeedback >
+        {currentTrack !== undefined && <ImageBackground src={currentTrack.artwork} style={{ borderRadius: theme.roundness / 0.35, overflow: 'hidden' }} blurRadius={20}>
+          <View style={{ height: '100%', backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.50)' : 'rgba(255, 255, 255, 0.50)' }}>
+            <Appbar.Header style={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}>
+              <Appbar.BackAction onPress={() => navigation.goBack()} />
+              <Appbar.Content title="Player"></Appbar.Content>
+            </Appbar.Header>
+            <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
+              <>
+                
+                <BottomDrawer drawerTitle="Play queue" onClose={() => { setPlayQueueState(false) }} state={playQueueState}>
+                  <ScrollView>
+                    <DataTable>
+                      <DataTable.Header>
+                        <DataTable.Title>Title</DataTable.Title>
+                        <DataTable.Title numeric>Artist</DataTable.Title>
+                      </DataTable.Header>
+                      {currentQueue.map((item, idx) => (
+                        <DataTable.Row key={idx} onPress={() => {
+                          TrackPlayer.skip(idx).then(() => { TrackPlayer.play() })
+                        }}>
+                          <DataTable.Cell>{item.title}</DataTable.Cell>
+                          <DataTable.Cell numeric>{item.artist}</DataTable.Cell>
+                        </DataTable.Row>
+                      ))}
+                    </DataTable>
+                  </ScrollView>
+                </BottomDrawer>
+                <Portal>
+                  <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
+                </Portal>
+              </>
+            </TouchableWithoutFeedback >
+          </View>
+        </ImageBackground>}
       </>
     </PaperProvider>
   )
