@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Appbar, Drawer, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme } from 'react-native-paper';
+import { Appbar, Drawer, FAB, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme, Dialog, List } from 'react-native-paper';
 import { Banner } from 'react-native-paper';
 import { Image, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,14 +23,32 @@ import Music from './Music';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignIn from './SignIn';
 import DirectoryView from '../components/DirectoryView';
+import PlaylistSelector from '../components/PlaylistSelector';
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme
 });
 
-const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
+const MORE_ICON = 'dots-vertical';
+
+let defaultFileActionsDialogState = {
+  item: {
+    filename: 'NaganoharaYoimya.ckpt',
+    type: 'file',
+    path: '/yoimiya/NaganoharaYoimya.ckpt',
+    lastModified: '2008-12-09 06:21:00',
+    mime: 'application/octet-stream'
+  },
+  visible: false
+}
+
+let defaultPlaylistSelectorState = {
+  onSelect: (id) => null, state: false, onDismiss: () => null, onError: (e) => null, dismissable: true, title: 'Yoimiya!'
+}
 
 const Home = ({ navigation, route }) => {
+  let [fileActionsDialogState, setFileActionsDialogState] = React.useState(defaultFileActionsDialogState)
+  let [playlistSelectorState, setPlaylistSelectorState] = React.useState(defaultPlaylistSelectorState)
   let [dirPath, setDirPath] = React.useState('')
   let [userInfo, setUserInfo] = React.useState({})
   const [messageState, setMessageState] = React.useState(false)
@@ -91,15 +109,17 @@ const Home = ({ navigation, route }) => {
             <ScrollView>
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <DirectoryView
-                  style={{ marginBottom: 10 }}
+                  style={{ marginBottom: 89 }}
                   showHeadImg={true}
                   path={dirPath}
                   onPressItem={i => {
                     if (i.type == 'dir') {
                       setDirPath(i.path)
+                    } else {
+
                     }
                   }}
-                  onLongPressItem={() => { }}
+                  onLongPressItem={i => setFileActionsDialogState({ item: i, visible: true })}
                   onError={(e) => {
                     setMessageText(`DirectoryView: ${e}`)
                     setMessageState(true)
@@ -108,8 +128,88 @@ const Home = ({ navigation, route }) => {
                   width='95%' />
               </View>
             </ScrollView>
+            <Dialog visible={fileActionsDialogState.visible} onDismiss={() => setFileActionsDialogState(defaultFileActionsDialogState)}>
+              <Dialog.Title>{fileActionsDialogState.item.filename}</Dialog.Title>
+              <Dialog.Content>
+                <Text ellipsizeMode='tail' numberOfLines={1}><Text variant='bodyLarge'>Path: </Text> {fileActionsDialogState.item.path}</Text>
+                <Text><Text variant='bodyLarge'>MIME: </Text> {fileActionsDialogState.item.mime}</Text>
+                <Text><Text variant='bodyLarge'>Last modified: </Text> {fileActionsDialogState.item.lastModified}</Text>
+                <Text style={{ marginTop: 5 }}></Text>
+                <List.Item
+                  title="Copy"
+                  left={props => <List.Icon {...props} icon="content-copy" />}
+                  onPress={() => console.log('pressed')}
+                />
+                <List.Item
+                  title="Move"
+                  left={props => <List.Icon {...props} icon="folder-move" />}
+                  onPress={() => console.log('pressed')}
+                />
+                <List.Item
+                  title="Rename"
+                  left={props => <List.Icon {...props} icon="rename-box" />}
+                  onPress={() => console.log('pressed')}
+                />
+                <List.Item
+                  title="Delete"
+                  left={props => <List.Icon {...props} icon="delete" />}
+                  onPress={() => console.log('pressed')}
+                />
+                <List.Item
+                  title="Share"
+                  left={props => <List.Icon {...props} icon="share" />}
+                  onPress={() => console.log('pressed')}
+                />
+                {fileActionsDialogState.item.mime.startsWith('audio/') && <List.Item
+                  title="Add to playlist"
+                  left={props => <List.Icon {...props} icon="playlist-plus" />}
+                  onPress={() => setPlaylistSelectorState({
+                    onSelect: (id) => Api.musicPlaylistSongsInsert(id, fileActionsDialogState.item.path).then(d => {
+                      if (d.data.ok) {
+                        setMessageText(`Added ${fileActionsDialogState.item.filename} to playlist successfully.`)
+                        setMessageState(true)
+                      } else {
+                        setMessageText(`Failed to add song to playlist: ${d.data.data}`)
+                        setMessageState(true)
+                      }
+                      setPlaylistSelectorState(defaultFileActionsDialogState)
+                    }).catch(e => {
+                      setMessageText(`Failed to add song to playlist: NetworkError`)
+                      setMessageState(true)
+                      setPlaylistSelectorState(defaultFileActionsDialogState)
+                    }),
+                    onDismiss: () => setPlaylistSelectorState(defaultFileActionsDialogState),
+                    dismissable: true,
+                    title: `Add ${fileActionsDialogState.item.filename} to playlist`,
+                    state: true
+                  })}
+                />}
+                <List.Item
+                  title="Download"
+                  left={props => <List.Icon {...props} icon="download" />}
+                  onPress={() => console.log('pressed')}
+                />
+              </Dialog.Content>
+            </Dialog>
+            <PlaylistSelector
+              state={playlistSelectorState.state}
+              dismissable={playlistSelectorState.dismissable}
+              onDismiss={playlistSelectorState.onDismiss}
+              onError={playlistSelectorState.onError}
+              onSelect={playlistSelectorState.onSelect}
+              title={playlistSelectorState.title} />
             <Portal>
               <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
+              <FAB
+                icon={MORE_ICON}
+                style={{
+                  position: 'absolute',
+                  margin: 16,
+                  right: 0,
+                  bottom: 0
+                }}
+                onPress={() => console.log('Pressed')}
+              />
             </Portal>
           </>
         </TouchableWithoutFeedback >

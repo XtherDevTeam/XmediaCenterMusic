@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Appbar, Card, DataTable, Drawer, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme } from 'react-native-paper';
+import { Appbar, Card, DataTable, Dialog, Drawer, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme } from 'react-native-paper';
 import { Banner } from 'react-native-paper';
 import { Image, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -30,8 +30,13 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
-const PlaylistView = ({ navigation, route }) => {
+let defaultDeleteSongDialogState = {
+  item: { path: '', id: 114514, info: { title: '' } },
+  state: false
+}
 
+const PlaylistView = ({ navigation, route }) => {
+  let [deleteSongDialogState, setDeleteSongDialogState] = React.useState(defaultDeleteSongDialogState)
   let [userInfo, setUserInfo] = React.useState({})
   const [messageState, setMessageState] = React.useState(false)
   const [messageText, setMessageText] = React.useState("")
@@ -67,7 +72,7 @@ const PlaylistView = ({ navigation, route }) => {
     })
   }, [navigation])
 
-  React.useEffect(() => {
+  let refreshPlaylist = () => {
     Api.musicPlaylistInfo(route.params.playlist.id).then(data => {
       if (data.data.ok) {
         setPlaylist(data.data.data)
@@ -76,7 +81,9 @@ const PlaylistView = ({ navigation, route }) => {
         setMessageState(true)
       }
     })
-  }, [route.params.playlist])
+  }
+
+  React.useEffect(refreshPlaylist, [route.params.playlist])
 
   React.useEffect(() => {
     Api.musicPlaylistSongs(playlist.id).then(data => {
@@ -162,6 +169,8 @@ const PlaylistView = ({ navigation, route }) => {
                     <DataTable.Row key={item.id} onPress={() => {
                       playerBackend.setCurrentTrack(rntpStylePlaylist.current, idx, true)
                       navigation.navigate('Player', {})
+                    }} onLongPress={() => {
+                      setDeleteSongDialogState({item, state: true})
                     }}>
                       <DataTable.Cell>{item.info.title}</DataTable.Cell>
                       <DataTable.Cell numeric>{item.info.artist}</DataTable.Cell>
@@ -170,13 +179,35 @@ const PlaylistView = ({ navigation, route }) => {
                 </DataTable>
               </Card>
             </ScrollView>
-            <Portal>
-              <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
-            </Portal>
-          </>
-        </TouchableWithoutFeedback >
-      </>
-    </PaperProvider>
+            <Dialog visible={deleteSongDialogState.state} dismissable={true} onDismiss={() => setDeleteSongDialogState(defaultDeleteSongDialogState)}>
+              <Dialog.Title>Delete song from playlist</Dialog.Title>
+              <Dialog.Content><Text variant='bodyMedium'>Are you really going to delete {deleteSongDialogState.item.info.title} from playlist?</Text></Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setDeleteSongDialogState(deleteSongDialogState)}>Cancel</Button>
+              <Button onPress={() => Api.musicPlaylistSongsDelete(playlist.id, deleteSongDialogState.item.id).then(d => {
+                if (d.data.ok) {
+                  refreshPlaylist()
+                  setMessageText(`Deleted ${deleteSongDialogState.item.info.title} successfully`)
+                  setMessageState(true)
+                } else {
+                  setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : ${d.data.data}`)
+                  setMessageState(true)
+                }
+                setDeleteSongDialogState(defaultDeleteSongDialogState)
+              }).catch(e => {
+                setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : NetworkError`)
+                setMessageState(true)
+                setDeleteSongDialogState(defaultDeleteSongDialogState)
+              })}>Continue</Button>
+            </Dialog.Actions>
+          </Dialog>
+          <Portal>
+            <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
+          </Portal>
+        </>
+      </TouchableWithoutFeedback >
+    </>
+    </PaperProvider >
   )
 };
 
