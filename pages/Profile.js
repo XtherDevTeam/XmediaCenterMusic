@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Appbar, Card, DataTable, Drawer, Icon, PaperProvider, Portal, withTheme } from 'react-native-paper';
+import { Appbar, Card, DataTable, Dialog, Drawer, Icon, PaperProvider, Portal, withTheme } from 'react-native-paper';
 import { Banner } from 'react-native-paper';
 import { Image, Keyboard, Platform, ScrollView, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,7 +19,13 @@ import * as Clipboard from 'expo-clipboard';
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
+let defaultConfirmDeletingDialogState = {
+  item: { id: 114514 },
+  state: false
+}
+
 const Profile = ({ navigation, route }) => {
+  let [confirmDeletingDialogState, setConfirmDeletingDialogState] = React.useState(defaultConfirmDeletingDialogState)
   let [userInfo, setUserInfo] = React.useState({})
   let [userShareLinks, setUserShareLinks] = React.useState([])
   const [messageState, setMessageState] = React.useState(false)
@@ -54,21 +60,23 @@ const Profile = ({ navigation, route }) => {
       })
     }, [])
   )
-  React.useEffect(() => {
-    if (userInfo != {} && userInfo !== undefined) {
-      Api.userShareLinks(userInfo.id).then(data => {
-        if (data.data.ok) {
-          console.log(data.data.data)
-          setUserShareLinks(data.data.data)
-        } else {
-          setMessageText(`Unable to fetch user share links: ${data.data.data}`)
-          setMessageState(true)
-        }
-      }).catch(err => {
-        setMessageText("Unable to fetch user share links: NetworkError")
-        setMessageState(true)
-      })
+
+  let refreshShareLinks = () => (userInfo != {} ? Api.userShareLinks(userInfo.id).then(data => {
+    if (data.data.ok) {
+      console.log(data.data.data)
+      setUserShareLinks(data.data.data)
+    } else {
+      setMessageText(`Unable to fetch user share links: ${data.data.data}`)
+      setMessageState(true)
     }
+  }).catch(err => {
+    setMessageText("Unable to fetch user share links: NetworkError")
+    setMessageState(true)
+  }) : console.log('nmsl', userInfo))
+
+  React.useEffect(() => {
+    console.log(userInfo)
+    refreshShareLinks()
   }, [userInfo])
 
   let signOut = () => {
@@ -115,6 +123,8 @@ const Profile = ({ navigation, route }) => {
                     {userShareLinks.map((item) => (
                       <DataTable.Row key={item.id} onPress={() => {
                         handleCopyLink(item)
+                      }} onLongPress={() => {
+                        setConfirmDeletingDialogState({ item, state: true })
                       }}>
                         <DataTable.Cell>{item.path}</DataTable.Cell>
                         <DataTable.Cell numeric>{item.id}</DataTable.Cell>
@@ -128,6 +138,28 @@ const Profile = ({ navigation, route }) => {
               </Portal>
             </View>
           </ScrollView>
+          <Dialog visible={confirmDeletingDialogState.state} onDismiss={() => setConfirmDeletingDialogState(defaultConfirmDeletingDialogState)}>
+            <Dialog.Title>Confirm deleting share link</Dialog.Title>
+            <Dialog.Content><Text variant='bodyMedium'>Are you really going to delete share link {confirmDeletingDialogState.item.id}?</Text></Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setConfirmDeletingDialogState(defaultConfirmDeletingDialogState)}>Cancel</Button>
+              <Button onPress={() => Api.shareLinkDelete(confirmDeletingDialogState.item.id).then(r => {
+                if (r.data.ok) {
+                  setMessageText(`Deleted share link ${confirmDeletingDialogState.item.id} successfully.`)
+                  setMessageState(true)
+                } else {
+                  setMessageText(`Unable to delete share link ${confirmDeletingDialogState.item.id}: ${r.data.data}`)
+                  setMessageState(true)
+                }
+                refreshShareLinks()
+                setConfirmDeletingDialogState(defaultConfirmDeletingDialogState)
+              }).catch(r => {
+                setMessageText(`Unable to delete share link ${confirmDeletingDialogState.item.id}: NetworkError`)
+                setMessageState(true)
+                setConfirmDeletingDialogState(defaultConfirmDeletingDialogState)
+              })}>Confirm</Button>
+            </Dialog.Actions>
+          </Dialog>
         </>
       </TouchableWithoutFeedback >
     </>

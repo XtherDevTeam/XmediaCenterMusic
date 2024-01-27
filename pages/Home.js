@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Appbar, Drawer, FAB, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme, Dialog, List } from 'react-native-paper';
+import { Appbar, Drawer, FAB, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme, Dialog, List, ProgressBar } from 'react-native-paper';
 import { Banner } from 'react-native-paper';
 import { Image, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,6 +17,8 @@ import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import Message from '../components/Message';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import Profile from './Profile';
+import * as Clipboard from 'expo-clipboard';
+import * as sharing from 'expo-sharing';
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
@@ -48,7 +50,28 @@ let defaultPlaylistSelectorState = {
   onSelect: (id) => null, state: false, onDismiss: () => null, onError: (e) => null, dismissable: true, title: 'Yoimiya!'
 }
 
+let defaultConfirmDownloadDialogState = {
+  item: { filename: '', path: '', type: 'file' },
+  state: false
+}
+
+let defaultConfirmDeletingDialogState = {
+  item: { filename: '', path: '', type: 'file' },
+  state: false
+}
+
+let defaultFileDownloadProgressDialogState = {
+  filename: '',
+  progress: 0,
+  expected: 1,
+  state: false
+}
+
 const Home = ({ navigation, route }) => {
+  let downloadDialogState = React.useRef(['', false])
+  let [confirmDeletingDialogState, setConfirmDeletingDialogState] = React.useState(defaultConfirmDeletingDialogState)
+  let [fileDownloadProgressDialogState, setFileDownloadProgressDialogState] = React.useState(defaultFileDownloadProgressDialogState)
+  let [confirmDownloadDialogState, setConfirmDownloadDialogState] = React.useState(defaultConfirmDownloadDialogState)
   let [showMoreOptions, setShowMoreOptions] = React.useState(false)
   let [fileActionsDialogState, setFileActionsDialogState] = React.useState(defaultFileActionsDialogState)
   let [playlistSelectorState, setPlaylistSelectorState] = React.useState(defaultPlaylistSelectorState)
@@ -98,6 +121,39 @@ const Home = ({ navigation, route }) => {
       setMessageText(`Error signing out: ${e.data.data}`)
       setMessageState(true)
     })
+  }
+
+  let handleCopyLink = (item) => {
+    Clipboard.setStringAsync(Api.getShareLinkPath(item))
+    setMessageText(`Link has been copied to clipboard: ${item}`)
+    setMessageState(true)
+  }
+
+  let downloadItem = (item) => {
+    let downloadPath = `${fs.documentDirectory}${item.filename}`
+    setFileDownloadProgressDialogState({ filename: item.filename, progress: 0, pps: 0, expected: 1, state: true })
+    downloadDialogState.current = [item.filename, true]
+    fs.createDownloadResumable(Api.getDownloadPath(item.path), downloadPath, {}, (p) => {
+      if (downloadDialogState.current[1]) {
+        setFileDownloadProgressDialogState({
+          filename: fileDownloadProgressDialogState.filename,
+          progress: p.totalBytesWritten,
+          expected: p.totalBytesExpectedToWrite,
+          pps: p.totalBytesWritten / p.totalBytesExpectedToWrite,
+          state: true
+        })
+      }
+    }).downloadAsync().then(() => {
+      downloadDialogState.current = ['', false]
+      console.log('Download completed! Waiting for sharing menu to pop up...')
+      setMessageText('Download completed! Waiting for sharing menu to pop up...')
+      setMessageState(true)
+      sharing.shareAsync(downloadPath).then(() => {
+        fs.deleteAsync(downloadPath)
+      })
+      setFileDownloadProgressDialogState(defaultFileDownloadProgressDialogState)
+    })
+    setConfirmDownloadDialogState(defaultConfirmDownloadDialogState)
   }
 
   return (
@@ -156,41 +212,65 @@ const Home = ({ navigation, route }) => {
                 <List.Item
                   title="Delete"
                   left={props => <List.Icon {...props} icon="delete" />}
-                  onPress={() => console.log('pressed')}
+                  onPress={() => {
+                    setConfirmDeletingDialogState({ item: fileActionsDialogState.item, state: true })
+                    setFileActionsDialogState(defaultFileActionsDialogState)
+                  }}
                 />
                 <List.Item
                   title="Share"
                   left={props => <List.Icon {...props} icon="share" />}
-                  onPress={() => console.log('pressed')}
+                  onPress={() => {
+                    Api.shareLinkCreate(fileActionsDialogState.item.path).then(r => {
+                      if (r.data.ok) {
+                        console.log(r.data.data)
+                        handleCopyLink(r.data.data)
+                      } else {
+                        setMessageText(`Unable to create a share link: ${r.data.data}`)
+                        setMessageState(true)
+                      }
+                      setFileActionsDialogState(defaultFileActionsDialogState)
+                    }).catch(r => {
+                      console.log(r)
+                      setMessageText(`Unable to create a share link: NetworkError`)
+                      setMessageState(true)
+                    })
+                  }}
                 />
                 {fileActionsDialogState.item.mime.startsWith('audio/') && <List.Item
                   title="Add to playlist"
                   left={props => <List.Icon {...props} icon="playlist-plus" />}
-                  onPress={() => setPlaylistSelectorState({
-                    onSelect: (id) => Api.musicPlaylistSongsInsert(id, fileActionsDialogState.item.path).then(d => {
-                      if (d.data.ok) {
-                        setMessageText(`Added ${fileActionsDialogState.item.filename} to playlist successfully.`)
+                  onPress={() => {
+                    setPlaylistSelectorState({
+                      onSelect: (id) => Api.musicPlaylistSongsInsert(id, fileActionsDialogState.item.path).then(d => {
+                        if (d.data.ok) {
+                          setMessageText(`Added ${fileActionsDialogState.item.filename} to playlist successfully.`)
+                          setMessageState(true)
+                        } else {
+                          setMessageText(`Failed to add song to playlist: ${d.data.data}`)
+                          setMessageState(true)
+                        }
+                        setPlaylistSelectorState(defaultFileActionsDialogState)
+                      }).catch(e => {
+                        setMessageText(`Failed to add song to playlist: NetworkError`)
                         setMessageState(true)
-                      } else {
-                        setMessageText(`Failed to add song to playlist: ${d.data.data}`)
-                        setMessageState(true)
-                      }
-                      setPlaylistSelectorState(defaultFileActionsDialogState)
-                    }).catch(e => {
-                      setMessageText(`Failed to add song to playlist: NetworkError`)
-                      setMessageState(true)
-                      setPlaylistSelectorState(defaultFileActionsDialogState)
-                    }),
-                    onDismiss: () => setPlaylistSelectorState(defaultFileActionsDialogState),
-                    dismissable: true,
-                    title: `Add ${fileActionsDialogState.item.filename} to playlist`,
-                    state: true
-                  })}
+                        setPlaylistSelectorState(defaultFileActionsDialogState)
+                      }),
+                      onDismiss: () => setPlaylistSelectorState(defaultFileActionsDialogState),
+                      dismissable: true,
+                      title: `Add ${fileActionsDialogState.item.filename} to playlist`,
+                      state: true
+                    })
+                    setFileActionsDialogState(defaultFileActionsDialogState)
+                  }}
                 />}
                 <List.Item
                   title="Download"
                   left={props => <List.Icon {...props} icon="download" />}
-                  onPress={() => console.log('pressed')}
+                  onPress={() => {
+                    setConfirmDownloadDialogState({ item: fileActionsDialogState.item, state: true })
+                    setFileActionsDialogState(defaultFileActionsDialogState)
+                  }}
                 />
               </Dialog.Content>
             </Dialog>
@@ -203,7 +283,7 @@ const Home = ({ navigation, route }) => {
                   onPress={() => {
                     documentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: true }).then(r => {
                       if (!r.canceled) {
-                        r.assets.forEach(rv => fs.uploadAsync(Api.driveUpload(dirPath, rv.name), rv.uri, { httpMethod: 'POST', uploadType: fs.FileSystemUploadType.MULTIPART}).then(rvv => {
+                        r.assets.forEach(rv => fs.uploadAsync(Api.driveUpload(dirPath, rv.name), rv.uri, { httpMethod: 'POST', uploadType: fs.FileSystemUploadType.MULTIPART }).then(rvv => {
                           console.log(rv.uri)
                           if (rvv.status == 200) {
                             let data = JSON.parse(rvv.body)
@@ -232,12 +312,61 @@ const Home = ({ navigation, route }) => {
                   title="Download music"
                   left={props => <List.Icon {...props} icon="cloud-download" />}
                   onPress={() => {
-                    console.log(`${fs.documentDirectory}test`)
-                    fs.makeDirectoryAsync(`${fs.documentDirectory}test`)
-                    
+
+                  }}
+                />
+                <List.Item
+                  title="Refresh"
+                  left={props => <List.Icon {...props} icon="refresh" />}
+                  onPress={() => {
+                    setDirPath(dirPath)
                   }}
                 />
               </Dialog.Content>
+            </Dialog>
+            <Dialog visible={fileDownloadProgressDialogState.state} onDismiss={() => {
+              setFileDownloadProgressDialogState(defaultFileDownloadProgressDialogState)
+              downloadDialogState.current = ['', false]
+            }}>
+              <Dialog.Title>Downloading {fileDownloadProgressDialogState.filename}</Dialog.Title>
+              <Dialog.Content>
+                <Text variant='bodyMedium'>Progress: ({fileDownloadProgressDialogState.progress}/{fileDownloadProgressDialogState.expected})</Text>
+                <ProgressBar progress={fileDownloadProgressDialogState.pps}></ProgressBar>
+              </Dialog.Content>
+            </Dialog>
+            <Dialog visible={confirmDeletingDialogState.state} onDismiss={() => setConfirmDownloadDialogState(defaultConfirmDeletingDialogState)}>
+              <Dialog.Title>Confirm deleting</Dialog.Title>
+              <Dialog.Content><Text variant='bodyMedium'>Are you really going to delete {confirmDeletingDialogState.item.filename}?</Text></Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setConfirmDownloadDialogState(defaultConfirmDeletingDialogState)}>Cancel</Button>
+                <Button onPress={() => {
+                  Api.driveDelete(confirmDeletingDialogState.item.path).then(r => {
+                    if (r.data.ok) {
+                      setMessageText(`Deleted ${confirmDeletingDialogState.item.filename} successfully.`)
+                      setMessageState(true)
+                    } else {
+                      setMessageText(`Unable to delete ${confirmDeletingDialogState.item.filename}: ${r.data.data}`)
+                      setMessageState(true)
+                    }
+                  }).catch(r => {
+                    setMessageText(`Unable to delete ${confirmDeletingDialogState.item.filename}: NetworkError`)
+                    setMessageState(true)
+                  })
+                  setDirPath(dirPath)
+                  setFileActionsDialogState(defaultFileActionsDialogState)
+                  setConfirmDeletingDialogState(defaultConfirmDeletingDialogState)
+                }}>Confirm</Button>
+              </Dialog.Actions>
+            </Dialog>
+            <Dialog visible={confirmDownloadDialogState.state} onDismiss={() => setConfirmDownloadDialogState(defaultConfirmDownloadDialogState)}>
+              <Dialog.Title>Confirm downloading</Dialog.Title>
+              <Dialog.Content><Text variant='bodyMedium'>Are you really going to download {confirmDownloadDialogState.item.filename}?</Text></Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setConfirmDownloadDialogState(defaultConfirmDownloadDialogState)}>Cancel</Button>
+                <Button onPress={() => {
+                  downloadItem(confirmDownloadDialogState.item)
+                }}>Confirm</Button>
+              </Dialog.Actions>
             </Dialog>
             <PlaylistSelector
               state={playlistSelectorState.state}
