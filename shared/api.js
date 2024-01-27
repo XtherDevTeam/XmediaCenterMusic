@@ -1,4 +1,5 @@
 import axios from "axios"
+import * as fs from 'expo-file-system'
 import * as storage from "./storage"
 
 let storageUrl = ""
@@ -99,8 +100,8 @@ function driveCreateDir(path, name) {
   return axios.post(`${storageUrl}/api/xms/v1/drive/createdir`, { "path": path, "name": name },)
 }
 
-function driveUpload(path, data) {
-  return axios.post(`${storageUrl}/api/xms/v1/drive/upload?path=${encodeURIComponent(path)}`, data)
+function driveUpload(path, filename) {
+  return `${storageUrl}/api/xms/v1/mobile/drive/upload?path=${encodeURIComponent(path)}&filename=${encodeURIComponent(filename)}`
 }
 
 function userAvatarUpdate(data) {

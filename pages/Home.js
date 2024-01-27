@@ -3,6 +3,8 @@ import { Appbar, Drawer, FAB, Icon, PaperProvider, Portal, adaptNavigationTheme,
 import { Banner } from 'react-native-paper';
 import { Image, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as documentPicker from 'expo-document-picker';
+import * as fs from 'expo-file-system';
 import { Text } from 'react-native-paper';
 import { Avatar } from 'react-native-paper';
 import { View } from 'react-native';
@@ -47,6 +49,7 @@ let defaultPlaylistSelectorState = {
 }
 
 const Home = ({ navigation, route }) => {
+  let [showMoreOptions, setShowMoreOptions] = React.useState(false)
   let [fileActionsDialogState, setFileActionsDialogState] = React.useState(defaultFileActionsDialogState)
   let [playlistSelectorState, setPlaylistSelectorState] = React.useState(defaultPlaylistSelectorState)
   let [dirPath, setDirPath] = React.useState('')
@@ -191,6 +194,51 @@ const Home = ({ navigation, route }) => {
                 />
               </Dialog.Content>
             </Dialog>
+            <Dialog visible={showMoreOptions} onDismiss={() => setShowMoreOptions(false)}>
+              <Dialog.Title>More options</Dialog.Title>
+              <Dialog.Content>
+                <List.Item
+                  title="Upload"
+                  left={props => <List.Icon {...props} icon="upload" />}
+                  onPress={() => {
+                    documentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: true }).then(r => {
+                      if (!r.canceled) {
+                        r.assets.forEach(rv => fs.uploadAsync(Api.driveUpload(dirPath, rv.name), rv.uri, { httpMethod: 'POST', uploadType: fs.FileSystemUploadType.MULTIPART}).then(rvv => {
+                          console.log(rv.uri)
+                          if (rvv.status == 200) {
+                            let data = JSON.parse(rvv.body)
+                            if (data.ok) {
+                              setMessageText(`Uploaded ${rv.name} successfully.`)
+                              setMessageState(true)
+                            } else {
+                              setMessageText(`Unable to upload ${rv.name} : ${data.data}`)
+                              setMessageState(true)
+                            }
+                          } else {
+                            setMessageText(`Unable to upload ${rv.name} : NetworkError`)
+                            setMessageState(true)
+                          }
+                          setDirPath(dirPath)
+                        }).catch(rvv => {
+                          setMessageText(`Unable to upload ${rv.name} : NetworkError`)
+                          setMessageState(true)
+                          setDirPath(dirPath)
+                        }))
+                      }
+                    })
+                  }}
+                />
+                <List.Item
+                  title="Download music"
+                  left={props => <List.Icon {...props} icon="cloud-download" />}
+                  onPress={() => {
+                    console.log(`${fs.documentDirectory}test`)
+                    fs.makeDirectoryAsync(`${fs.documentDirectory}test`)
+                    
+                  }}
+                />
+              </Dialog.Content>
+            </Dialog>
             <PlaylistSelector
               state={playlistSelectorState.state}
               dismissable={playlistSelectorState.dismissable}
@@ -208,7 +256,7 @@ const Home = ({ navigation, route }) => {
                   right: 0,
                   bottom: 0
                 }}
-                onPress={() => console.log('Pressed')}
+                onPress={() => setShowMoreOptions(true)}
               />
             </Portal>
           </>

@@ -16,8 +16,8 @@ function PlaylistSelector({ onSelect, state, onDismiss, onError, dismissable, ti
     }).catch(e => {
       onError(`unable to fetch user's playlists: NetworkError`)
     })
-  }, [])
-  
+  }, [state])
+
   return <Dialog visible={state} dismissable={dismissable} onDismiss={onDismiss}>
     <Dialog.Title>{title}</Dialog.Title>
     <Dialog.Content>
