@@ -38,7 +38,7 @@ const Player = ({ navigation, route }) => {
     icon: 'repeat-off',
     index: 0
   })
-  let [currentVolume, setCurrentVolume] = React.useState(0.5)
+  let [currentVolume, setCurrentVolume] = React.useState(0.621)
   let isPlaying = useIsPlaying()
   let currentProgress = useProgress()
   let [currentProgressStr, setCurrentProgressStr] = React.useState(['00:00', '00:00'])
@@ -80,6 +80,11 @@ const Player = ({ navigation, route }) => {
     })
   }, [navigation])
 
+  useFocusEffect(React.useCallback(() => {
+    TrackPlayer.getVolume().then(v => {
+      setCurrentVolume(v)
+    })
+  }, []))
 
 
   React.useEffect(() => {
@@ -104,13 +109,12 @@ const Player = ({ navigation, route }) => {
         })
       }
     })
-    TrackPlayer.getVolume().then(v => {
-      setCurrentVolume(v)
-    })
   }, [currentTrack])
 
   React.useEffect(() => {
-    TrackPlayer.setVolume(currentVolume)
+    if (currentVolume != 0.621) {
+      TrackPlayer.setVolume(currentVolume)
+    }
   }, [currentVolume])
 
   let signOut = () => {
@@ -143,7 +147,7 @@ const Player = ({ navigation, route }) => {
               <>
                 {/* Player controls */}
                 <View style={{ marginTop: 16, padding: 20, height: '100%', alignItems: 'center' }}>
-                  <Surface elevation={4} style={{width: '80%', borderRadius: theme.roundness / 0.35}}>
+                  <Surface elevation={4} style={{ width: '80%', borderRadius: theme.roundness / 0.35 }}>
                     <Image
                       source={{ uri: currentTrack.artwork }}
                       style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
@@ -157,13 +161,13 @@ const Player = ({ navigation, route }) => {
                   </Text>
                   {/* Progress bar */}
                   <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-                    <Text style={{ marginTop: 13, width: 45 }} variant='labelMedium'>{currentProgressStr[0]}</Text>
+                    <Text style={{ marginTop: 13, width: 48 }} variant='labelMedium'>{currentProgressStr[0]}</Text>
                     <View style={{ flex: 1 }}>
                       <Slide thumbTintColor={theme.colors.primary} value={currentProgress.position} minimumValue={0} maximumValue={currentProgress.duration} step={1} style={{ marginHorizontal: 16, marginTop: 16 }} onValueChange={(v) => {
                         TrackPlayer.seekTo(v)
                       }}></Slide>
                     </View>
-                    <Text style={{ marginTop: 13, width: 45 }} variant='labelMedium'>{currentProgressStr[1]}</Text>
+                    <Text style={{ marginTop: 13, width: 48 }} variant='labelMedium'>{currentProgressStr[1]}</Text>
                   </View>
 
                   {/* Player controls (play, pause, skip) */}
