@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Modal, StyleSheet, Platform, ScrollView } from 'react-native';
+import { View, Modal, StyleSheet, Platform, ScrollView, SafeAreaView, Dimensions } from 'react-native';
 import { Card, Title, Paragraph, Button, IconButton } from 'react-native-paper';
 
 const BottomDrawer = ({ drawerTitle, onClose, children, state }) => {
@@ -11,13 +11,12 @@ const BottomDrawer = ({ drawerTitle, onClose, children, state }) => {
       onRequestClose={onClose}
     >
       <View style={styles.modalContainer}>
-        <View style={styles.bottomDrawer}>
-          <Card>
+        <View style={{ height: '100%' }}>
+          <Card style={{ height: '100%' }}>
             <Card.Title title={drawerTitle} titleVariant='titleMedium' right={() => <IconButton icon={"close"} onPress={() => {
-              console.log(drawerTitle)
               onClose()
             }} />}></Card.Title>
-            <ScrollView>
+            <ScrollView style={{ height: '100%' }}>
               {children}
             </ScrollView>
           </Card>
@@ -29,14 +28,11 @@ const BottomDrawer = ({ drawerTitle, onClose, children, state }) => {
 
 const styles = StyleSheet.create({
   modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: Platform.OS === 'ios' ? 95 : 0,
-  },
-  bottomDrawer: {
-    height: '50%',
+    height: '100%',
+    maxHeight: Dimensions.get('window').height * 0.5,
     width: '100%',
-    paddingBottom: Platform.OS === 'ios' ? 50 : 75,
+    position: 'absolute',
+    bottom: 0,
   },
 });
 

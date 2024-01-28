@@ -35,7 +35,7 @@ function PathInput({ path, onSelect, acceptType, state, onDismiss, onError, dism
   React.useEffect(() => {
     console.log('fileSelector: currentDir', rPath)
     refresh()
-  }, [rPath])
+  }, [rPath, state])
 
   React.useEffect(() => setRPath(path), [path])
 
