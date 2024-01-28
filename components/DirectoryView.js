@@ -4,33 +4,43 @@ import { Card, Title, Paragraph, Button, IconButton, withTheme, Text, Icon, Data
 import * as Api from '../shared/api'
 import { mdTheme } from '../shared/styles';
 
-function DirectoryView({ path, showHeadImg, onPressItem, onLongPressItem, onError, width, height, style }) {
-  let [pathName, setPathName] = React.useState(Api.dirname(path))
+function DirectoryView({ path, showHeadImg, onPressItem, onLongPressItem, onError, width, height, style, onRef }) {
+  const [update, newState] = React.useState()
+  let [pathName, setPathName] = React.useState(Api.basename(path))
   let [pathDir, setPathDir] = React.useState({ info: { dirs: 0, files: 0, total: 0 }, list: [] })
   let theme = mdTheme()
 
-  React.useEffect(() => {
-    Api.driveDir(path).then(d => {
-      if (d.data.ok) {
-        setPathName(Api.basename(path))
-        if (path != '/') {
-          setPathDir({
-            info: d.data.data.info,
-            list: [{
-              path: Api.dirname(path),
-              filename: '..',
-              type: 'dir',
-              lastModified: 'Back to parent directory',
-            }, ...d.data.data.list]
-          })
-        } else {
-          setPathDir(d.data.data)
-        }
+  let refresh = () => Api.driveDir(path == '' ? '/' : path).then(d => {
+    if (d.data.ok) {
+      console.log('who starts this', path, '-', Api.basename(path))
+      setPathName(Api.basename(path))
+      if (path != '/') {
+        setPathDir({
+          info: d.data.data.info,
+          list: [{
+            path: Api.dirname(path),
+            filename: '..',
+            type: 'dir',
+            lastModified: 'Back to parent directory',
+          }, ...d.data.data.list]
+        })
       } else {
-        onError(d.data.data)
-        setPathDir({ info: { dirs: 0, files: 0, total: 0 }, list: [] })
+        setPathDir(d.data.data)
       }
-    })
+    } else {
+      onError(d.data.data)
+      setPathDir({ info: { dirs: 0, files: 0, total: 0 }, list: [] })
+    }
+  })
+
+  React.useEffect(() => {
+    onRef.current = newState
+  }, [])
+  React.useEffect(() => { refresh() }, [update])
+
+  React.useEffect(() => {
+    console.log('currentDir', path)
+    refresh()
   }, [path])
 
   return <Card style={{ width, ...style }}>

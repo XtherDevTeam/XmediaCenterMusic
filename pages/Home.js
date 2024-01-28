@@ -28,6 +28,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SignIn from './SignIn';
 import DirectoryView from '../components/DirectoryView';
 import PlaylistSelector from '../components/PlaylistSelector';
+import PathInput from '../components/PathInput';
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme
@@ -67,7 +68,28 @@ let defaultFileDownloadProgressDialogState = {
   state: false
 }
 
+let defaultRenameDialogState = {
+  item: { filename: '', path: '', type: 'file' },
+  state: false,
+}
+
+let defaultPathInputState = {
+  title: '',
+  description: '',
+  path: '/',
+  acceptType: 'both',
+  onDismiss: () => { },
+  onSelect: () => { },
+  state: false
+}
+
 const Home = ({ navigation, route }) => {
+  let [pathInputState, setPathInputState] = React.useState(defaultPathInputState)
+  let [renameDialogState, setRenameDialogState] = React.useState(defaultRenameDialogState)
+  let [renameDialogInput, setRenameDialogInput] = React.useState("")
+  let directoryViewRef = React.useRef(null)
+  let [createFolderDialogFolderName, setCreateFolderDialogFolderName] = React.useState("")
+  let [showCreateFolderDialog, setShowCreateFolderDialog] = React.useState(false)
   let downloadDialogState = React.useRef(['', false])
   let [confirmDeletingDialogState, setConfirmDeletingDialogState] = React.useState(defaultConfirmDeletingDialogState)
   let [fileDownloadProgressDialogState, setFileDownloadProgressDialogState] = React.useState(defaultFileDownloadProgressDialogState)
@@ -149,6 +171,7 @@ const Home = ({ navigation, route }) => {
       setMessageText('Download completed! Waiting for sharing menu to pop up...')
       setMessageState(true)
       sharing.shareAsync(downloadPath).then(() => {
+        console.log('cleaning temporoary files')
         fs.deleteAsync(downloadPath)
       })
       setFileDownloadProgressDialogState(defaultFileDownloadProgressDialogState)
@@ -168,6 +191,7 @@ const Home = ({ navigation, route }) => {
             <ScrollView>
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <DirectoryView
+                  onRef={directoryViewRef}
                   style={{ marginBottom: 89 }}
                   showHeadImg={true}
                   path={dirPath}
@@ -175,10 +199,10 @@ const Home = ({ navigation, route }) => {
                     if (i.type == 'dir') {
                       setDirPath(i.path)
                     } else {
-
+                      setConfirmDownloadDialogState({ item: i, state: true })
                     }
                   }}
-                  onLongPressItem={i => setFileActionsDialogState({ item: i, visible: true })}
+                  onLongPressItem={i => i.filename != '..' ? setFileActionsDialogState({ item: i, visible: true }) : null}
                   onError={(e) => {
                     setMessageText(`DirectoryView: ${e}`)
                     setMessageState(true)
@@ -197,17 +221,75 @@ const Home = ({ navigation, route }) => {
                 <List.Item
                   title="Copy"
                   left={props => <List.Icon {...props} icon="content-copy" />}
-                  onPress={() => console.log('pressed')}
+                  onPress={() => {
+                    setPathInputState({
+                      title: 'Copy to',
+                      description: 'Select a path for the destination',
+                      acceptType: 'dir',
+                      path: dirPath,
+                      onDismiss: () => setPathInputState(defaultPathInputState),
+                      onSelect: v => {
+                        Api.driveCopy(fileActionsDialogState.item.path, `${v}/`).then(r => {
+                          if (r.data.ok) {
+                            setMessageText(`Copied ${fileActionsDialogState.item.filename} to ${v} successfully.`)
+                            setMessageState(true)
+                          } else {
+                            setMessageText(`Unable to copy ${fileActionsDialogState.item.filename} : ${r.data.data}`)
+                            setMessageState(true)
+                          }
+                          directoryViewRef.current(Math.random())
+                          setPathInputState(defaultPathInputState)
+                        }).catch(r => {
+                          setMessageText(`Unable to copy ${fileActionsDialogState.item.filename} : NetworkError`)
+                          setMessageState(true)
+                          setPathInputState(defaultPathInputState)
+                        })
+                      },
+                      state: true
+                    })
+                    setFileActionsDialogState(defaultFileActionsDialogState)
+                  }}
                 />
                 <List.Item
                   title="Move"
                   left={props => <List.Icon {...props} icon="folder-move" />}
-                  onPress={() => console.log('pressed')}
+                  onPress={() => {
+                    setPathInputState({
+                      title: 'Move to',
+                      description: 'Select a path for the destination',
+                      acceptType: 'dir',
+                      path: dirPath,
+                      onDismiss: () => setPathInputState(defaultPathInputState),
+                      onSelect: v => {
+                        Api.driveMove(fileActionsDialogState.item.path, `${v}/`).then(r => {
+                          if (r.data.ok) {
+                            setMessageText(`Copied ${fileActionsDialogState.item.filename} to ${v} successfully.`)
+                            setMessageState(true)
+                          } else {
+                            setMessageText(`Unable to copy ${fileActionsDialogState.item.filename} : ${r.data.data}`)
+                            setMessageState(true)
+                          }
+                          directoryViewRef.current(Math.random())
+                          setPathInputState(defaultPathInputState)
+                        }).catch(r => {
+                          setMessageText(`Unable to copy ${fileActionsDialogState.item.filename} : NetworkError`)
+                          setMessageState(true)
+                          setPathInputState(defaultPathInputState)
+                        })
+                      },
+                      state: true
+                    })
+                    setFileActionsDialogState(defaultFileActionsDialogState)
+                  }}
                 />
                 <List.Item
                   title="Rename"
                   left={props => <List.Icon {...props} icon="rename-box" />}
-                  onPress={() => console.log('pressed')}
+                  onPress={() => {
+                    setRenameDialogInput(fileActionsDialogState.item.filename)
+                    setRenameDialogState({ item: fileActionsDialogState.item, state: true })
+                    setFileActionsDialogState(defaultFileActionsDialogState)
+                  }}
                 />
                 <List.Item
                   title="Delete"
@@ -298,11 +380,11 @@ const Home = ({ navigation, route }) => {
                             setMessageText(`Unable to upload ${rv.name} : NetworkError`)
                             setMessageState(true)
                           }
-                          setDirPath(dirPath)
+                          directoryViewRef.current(Math.random())
                         }).catch(rvv => {
                           setMessageText(`Unable to upload ${rv.name} : NetworkError`)
                           setMessageState(true)
-                          setDirPath(dirPath)
+                          directoryViewRef.current(Math.random())
                         }))
                       }
                     })
@@ -319,10 +401,55 @@ const Home = ({ navigation, route }) => {
                   title="Refresh"
                   left={props => <List.Icon {...props} icon="refresh" />}
                   onPress={() => {
-                    setDirPath(dirPath)
+                    console.log('current dir', dirPath)
+                    directoryViewRef.current(Math.random())
+                    setShowMoreOptions(false)
+                  }}
+                />
+                <List.Item
+                  title="Create folder"
+                  left={props => <List.Icon {...props} icon="folder-plus" />}
+                  onPress={() => {
+                    setShowCreateFolderDialog(true)
+                    setShowMoreOptions(false)
                   }}
                 />
               </Dialog.Content>
+            </Dialog>
+            <PathInput {...pathInputState}></PathInput>
+            <Dialog visible={renameDialogState.state} onDismiss={() => {
+              setRenameDialogState(defaultRenameDialogState)
+              setRenameDialogInput('')
+            }}>
+              <Dialog.Title>Rename</Dialog.Title>
+              <Dialog.Content>
+                <TextInput label={`Enter new name for ${renameDialogState.item.filename}`} value={renameDialogInput} onChangeText={v => setRenameDialogInput(v)}></TextInput>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => {
+                  setRenameDialogState(defaultRenameDialogState)
+                  setRenameDialogInput('')
+                }}>Cancel</Button>
+                <Button onPress={() => {
+                  Api.driveRename(renameDialogState.item.path, renameDialogInput).then(r => {
+                    if (r.data.ok) {
+                      setMessageText(`Renamed to ${renameDialogInput} successfully`)
+                      setMessageState(true)
+                    } else {
+                      setMessageText(`Unable to rename item: ${r.data.data}`)
+                      setMessageState(true)
+                    }
+                    directoryViewRef.current(Math.random())
+                    setRenameDialogState(defaultRenameDialogState)
+                    setRenameDialogInput('')
+                  }).catch(r => {
+                    setMessageText(`Unable to rename item: NetworkError`)
+                    setMessageState(true)
+                    setRenameDialogState(defaultRenameDialogState)
+                    setRenameDialogInput('')
+                  })
+                }}>Rename</Button>
+              </Dialog.Actions>
             </Dialog>
             <Dialog visible={fileDownloadProgressDialogState.state} onDismiss={() => {
               setFileDownloadProgressDialogState(defaultFileDownloadProgressDialogState)
@@ -334,11 +461,11 @@ const Home = ({ navigation, route }) => {
                 <ProgressBar progress={fileDownloadProgressDialogState.pps}></ProgressBar>
               </Dialog.Content>
             </Dialog>
-            <Dialog visible={confirmDeletingDialogState.state} onDismiss={() => setConfirmDownloadDialogState(defaultConfirmDeletingDialogState)}>
+            <Dialog visible={confirmDeletingDialogState.state} onDismiss={() => setConfirmDeletingDialogState(defaultConfirmDeletingDialogState)}>
               <Dialog.Title>Confirm deleting</Dialog.Title>
               <Dialog.Content><Text variant='bodyMedium'>Are you really going to delete {confirmDeletingDialogState.item.filename}?</Text></Dialog.Content>
               <Dialog.Actions>
-                <Button onPress={() => setConfirmDownloadDialogState(defaultConfirmDeletingDialogState)}>Cancel</Button>
+                <Button onPress={() => setConfirmDeletingDialogState(defaultConfirmDeletingDialogState)}>Cancel</Button>
                 <Button onPress={() => {
                   Api.driveDelete(confirmDeletingDialogState.item.path).then(r => {
                     if (r.data.ok) {
@@ -352,10 +479,36 @@ const Home = ({ navigation, route }) => {
                     setMessageText(`Unable to delete ${confirmDeletingDialogState.item.filename}: NetworkError`)
                     setMessageState(true)
                   })
-                  setDirPath(dirPath)
+                  directoryViewRef.current(Math.random())
                   setFileActionsDialogState(defaultFileActionsDialogState)
                   setConfirmDeletingDialogState(defaultConfirmDeletingDialogState)
                 }}>Confirm</Button>
+              </Dialog.Actions>
+            </Dialog>
+            <Dialog visible={showCreateFolderDialog} onDismiss={() => setShowCreateFolderDialog(false)}>
+              <Dialog.Title>Create folder</Dialog.Title>
+              <Dialog.Content>
+                <TextInput mode='flat' label={'New folder name'} value={createFolderDialogFolderName} onChangeText={v => setCreateFolderDialogFolderName(v)}></TextInput>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setShowCreateFolderDialog(false)}>Cancel</Button>
+                <Button onPress={() => {
+                  Api.driveCreateDir(dirPath, createFolderDialogFolderName).then(r => {
+                    if (r.data.ok) {
+                      setMessageText(`Created ${createFolderDialogFolderName} successfully`)
+                      setMessageState(true)
+                    } else {
+                      setMessageText(`Unable to create ${createFolderDialogFolderName} : ${r.data.data}`)
+                      setMessageState(true)
+                    }
+                    directoryViewRef.current(Math.random())
+                    setShowCreateFolderDialog(false)
+                  }).catch(r => {
+                    setMessageText(`Unable to create ${createFolderDialogFolderName} : NetworkError`)
+                    setMessageState(true)
+                    setShowCreateFolderDialog(false)
+                  })
+                }}>Create</Button>
               </Dialog.Actions>
             </Dialog>
             <Dialog visible={confirmDownloadDialogState.state} onDismiss={() => setConfirmDownloadDialogState(defaultConfirmDownloadDialogState)}>
@@ -376,7 +529,6 @@ const Home = ({ navigation, route }) => {
               onSelect={playlistSelectorState.onSelect}
               title={playlistSelectorState.title} />
             <Portal>
-              <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
               <FAB
                 icon={MORE_ICON}
                 style={{
@@ -387,6 +539,12 @@ const Home = ({ navigation, route }) => {
                 }}
                 onPress={() => setShowMoreOptions(true)}
               />
+              <Message timeout={5000} style={{
+                position: 'absolute',
+                margin: 16,
+                width: '91.5%',
+                bottom: 0
+              }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
             </Portal>
           </>
         </TouchableWithoutFeedback >
