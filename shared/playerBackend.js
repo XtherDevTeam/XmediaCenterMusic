@@ -12,6 +12,7 @@ function setup() {
         Capability.SkipToNext,
         Capability.SkipToPrevious,
         Capability.Stop,
+        Capability.SeekTo,
       ],
       notificationCapabilities: [
         Capability.Play,
