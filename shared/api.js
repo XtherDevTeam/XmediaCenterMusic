@@ -328,6 +328,14 @@ function userManageCreate(name, password, slogan, level) {
   return axios.post(`${storageUrl}/api/xms/v1/user/manage/create`, { name: name, password: password, slogan: slogan, level: level })
 }
 
+function increasePlaylistPlayCount (playlistId) {
+  return axios.post(`${storageUrl}/api/xms/v1/music/playlist/${playlistId}/increasePlayCount`)
+}
+
+function increaseSongPlayCount (songId) {
+  return axios.post(`${storageUrl}/api/xms/v1/music/song/${songId}/increasePlayCount`)
+}
+
 export {
   submitLogin, submitSignup, checkIfLoggedIn, userInfo, driveDir, driveDelete,
   signOut, getDownloadPath, driveRename, driveMove, driveCreateDir, driveUpload,
@@ -340,5 +348,5 @@ export {
   getShareLinkFilePath, getShareLinkDirFilePath, shareLinkDir, userTasks, infoPlugins,
   taskCreate, taskInfo, taskDelete, config, configUpdate, info, userManageDelete,
   userManageUpdateLevel, userManageList, userManageCreate, refreshStorageUrl,
-  userAvatarUrl, userHeadImgUrl, 
+  userAvatarUrl, userHeadImgUrl, increasePlaylistPlayCount, increaseSongPlayCount
 }

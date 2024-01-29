@@ -38,6 +38,7 @@ const Player = ({ navigation, route }) => {
     icon: 'repeat-off',
     index: 0
   })
+  let isCounted = React.useRef(false)
   let [currentVolume, setCurrentVolume] = React.useState(0.621)
   let isPlaying = useIsPlaying()
   let currentProgress = useProgress()
@@ -51,6 +52,20 @@ const Player = ({ navigation, route }) => {
 
   React.useEffect(() => {
     setCurrentProgressStr([formatDuraton(currentProgress.position), '-' + formatDuraton(currentProgress.duration - currentProgress.position)])
+    if (!isCounted.current && currentProgress.position > currentProgress.duration / 2) {
+      isCounted.current = true
+      Api.increaseSongPlayCount(parseInt(currentTrack.description, 10)).then(r => {
+        if (r.data.ok) {
+          console.log('update song playback count successfully')
+        } else {
+          setMessageText(`Unable to update song playback count: ${r.data.data}`)
+          setMessageState(true)
+        }
+      }).catch(r => {
+        setMessageText(`Unable to update song playback count: NetworkError`)
+        setMessageState(true)
+      })
+    }
   }, [currentProgress])
 
   React.useEffect(() => {

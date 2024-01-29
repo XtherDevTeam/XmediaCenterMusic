@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Appbar, Card, DataTable, Dialog, Drawer, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme } from 'react-native-paper';
+import { Appbar, Card, DataTable, Dialog, Drawer, Icon, PaperProvider, Portal, Surface, adaptNavigationTheme, withTheme } from 'react-native-paper';
 import { Banner } from 'react-native-paper';
 import { Image, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -36,6 +36,7 @@ let defaultDeleteSongDialogState = {
 }
 
 const PlaylistView = ({ navigation, route }) => {
+  let isCounted = React.useRef(false)
   let [deleteSongDialogState, setDeleteSongDialogState] = React.useState(defaultDeleteSongDialogState)
   let [userInfo, setUserInfo] = React.useState({})
   const [messageState, setMessageState] = React.useState(false)
@@ -111,6 +112,7 @@ const PlaylistView = ({ navigation, route }) => {
         genre: 'Powered by xiaokang00010 with Naganohara Yoimiya',
         url: Api.getMusicPlaylistSongsFileSrc(playlist.id, i.id),
         duration: i.info.length,
+        description: toString(i.id),
       })
     })
     return rntpStyle
@@ -142,17 +144,23 @@ const PlaylistView = ({ navigation, route }) => {
                 <View style={{ width: '90%' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                     <View style={{ flex: 30 }}>
-                      <Image source={{ uri: Api.getPlaylistArtworkPath(playlist.id) }} style={{ width: '100%', aspectRatio: 1, borderRadius: theme.roundness }} />
+                      <Surface elevation={4} style={{ width: '100%', borderRadius: theme.roundness }}>
+                        <Image source={{ uri: Api.getPlaylistArtworkPath(playlist.id) }} style={{ width: '100%', aspectRatio: 1, borderRadius: theme.roundness }} />
+                      </Surface>
                     </View>
                     <View style={{ flex: 5 }}></View>
                     <View style={{ flex: 50 }}>
                       <Text variant="titleLarge">{playlist.name}</Text>
-                      <Text variant="bodyMedium">{playlist.description.substring(0, 128)}</Text>
+                      <Text variant="bodyMedium" numberOfLines={1}>{playlist.description.substring(0, 128)}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
                         <Avatar.Image source={{ uri: Api.userAvatarUrl(playlist.owner) }} size={24}></Avatar.Image>
                         <Text style={{ marginLeft: 5 }} variant="bodyMedium">
                           {userInfo.name}
                         </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 7 }}>
+                        <Icon source={'play-circle'} size={19} />
+                        <Text style={{ marginLeft: 5 }} variant='bodyMedium'>{playlist.playCount}</Text>
                       </View>
                     </View>
                   </View>
@@ -167,10 +175,24 @@ const PlaylistView = ({ navigation, route }) => {
                   </DataTable.Header>
                   {playlistSongs.map((item, idx) => (
                     <DataTable.Row key={item.id} onPress={() => {
+                      if (!isCounted.current) {
+                        isCounted.current = true
+                        Api.increasePlaylistPlayCount(playlist.id).then(r => {
+                          if (r.data.ok) {
+                            refreshPlaylist()
+                          } else {
+                            setMessageText(`Unable to increase playlist playback count: ${r.data.data}`)
+                            setMessageState(true)
+                          }
+                        }).catch(r => {
+                          setMessageText(`Unable to increase playlist playback count: NetworkError`)
+                          setMessageState(true)
+                        })
+                      }
                       playerBackend.setCurrentTrack(rntpStylePlaylist.current, idx, true)
                       navigation.navigate('Player', {})
                     }} onLongPress={() => {
-                      setDeleteSongDialogState({item, state: true})
+                      setDeleteSongDialogState({ item, state: true })
                     }}>
                       <DataTable.Cell>{item.info.title}</DataTable.Cell>
                       <DataTable.Cell numeric>{item.info.artist}</DataTable.Cell>
@@ -184,29 +206,29 @@ const PlaylistView = ({ navigation, route }) => {
               <Dialog.Content><Text variant='bodyMedium'>Are you really going to delete {deleteSongDialogState.item.info.title} from playlist?</Text></Dialog.Content>
               <Dialog.Actions>
                 <Button onPress={() => setDeleteSongDialogState(deleteSongDialogState)}>Cancel</Button>
-              <Button onPress={() => Api.musicPlaylistSongsDelete(playlist.id, deleteSongDialogState.item.id).then(d => {
-                if (d.data.ok) {
-                  refreshPlaylist()
-                  setMessageText(`Deleted ${deleteSongDialogState.item.info.title} successfully`)
+                <Button onPress={() => Api.musicPlaylistSongsDelete(playlist.id, deleteSongDialogState.item.id).then(d => {
+                  if (d.data.ok) {
+                    refreshPlaylist()
+                    setMessageText(`Deleted ${deleteSongDialogState.item.info.title} successfully`)
+                    setMessageState(true)
+                  } else {
+                    setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : ${d.data.data}`)
+                    setMessageState(true)
+                  }
+                  setDeleteSongDialogState(defaultDeleteSongDialogState)
+                }).catch(e => {
+                  setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : NetworkError`)
                   setMessageState(true)
-                } else {
-                  setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : ${d.data.data}`)
-                  setMessageState(true)
-                }
-                setDeleteSongDialogState(defaultDeleteSongDialogState)
-              }).catch(e => {
-                setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : NetworkError`)
-                setMessageState(true)
-                setDeleteSongDialogState(defaultDeleteSongDialogState)
-              })}>Continue</Button>
-            </Dialog.Actions>
-          </Dialog>
-          <Portal>
-            <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
-          </Portal>
-        </>
-      </TouchableWithoutFeedback >
-    </>
+                  setDeleteSongDialogState(defaultDeleteSongDialogState)
+                })}>Continue</Button>
+              </Dialog.Actions>
+            </Dialog>
+            <Portal>
+              <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
+            </Portal>
+          </>
+        </TouchableWithoutFeedback >
+      </>
     </PaperProvider >
   )
 };
