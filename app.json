@@ -30,7 +30,7 @@
             "localhost": {
               "NSExceptionAllowsInsecureHTTPLoads": true
             },
-            "www.xiaokang00010.top": {
+            "xiaokang00010.top": {
               "NSIncludesSubdomains": true,
               "NSExceptionAllowsInsecureHTTPLoads": true
             }

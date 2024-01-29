@@ -36,7 +36,6 @@ let defaultDeleteSongDialogState = {
 }
 
 const PlaylistView = ({ navigation, route }) => {
-  let isCounted = React.useRef(false)
   let [deleteSongDialogState, setDeleteSongDialogState] = React.useState(defaultDeleteSongDialogState)
   let [userInfo, setUserInfo] = React.useState({})
   const [messageState, setMessageState] = React.useState(false)
@@ -175,21 +174,7 @@ const PlaylistView = ({ navigation, route }) => {
                   </DataTable.Header>
                   {playlistSongs.map((item, idx) => (
                     <DataTable.Row key={item.id} onPress={() => {
-                      if (!isCounted.current) {
-                        isCounted.current = true
-                        Api.increasePlaylistPlayCount(playlist.id).then(r => {
-                          if (r.data.ok) {
-                            refreshPlaylist()
-                          } else {
-                            setMessageText(`Unable to increase playlist playback count: ${r.data.data}`)
-                            setMessageState(true)
-                          }
-                        }).catch(r => {
-                          setMessageText(`Unable to increase playlist playback count: NetworkError`)
-                          setMessageState(true)
-                        })
-                      }
-                      playerBackend.setCurrentTrack(rntpStylePlaylist.current, idx, true)
+                      playerBackend.setCurrentTrack(playlist.id, rntpStylePlaylist.current, idx, true)
                       navigation.navigate('Player', {})
                     }} onLongPress={() => {
                       setDeleteSongDialogState({ item, state: true })

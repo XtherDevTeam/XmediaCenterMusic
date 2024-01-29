@@ -1,5 +1,7 @@
 import rntp, { State, Capability, AppKilledPlaybackBehavior } from 'react-native-track-player'
 import playbackService from './playbackService'
+import * as storage from './storage'
+import * as Api from './api'
 
 function setup() {
   (async () => {
@@ -51,7 +53,7 @@ function formatDuraton(time) {
     var min = Math.floor(time / 60) % 60;
     var sec = Math.floor(time % 60);
     // console.log(hour, min, sec)
-    if (hour == 0) { 
+    if (hour == 0) {
       // do nothing
       time = ""
     } else if (hour < 10) {
@@ -73,7 +75,17 @@ function formatDuraton(time) {
   return time;
 }
 
-function setCurrentTrack(songs, index, playAfter) {
+function setCurrentTrack(pid, songs, index, playAfter) {
+  storage.inquireItem('current-playing-playlist-id', (ok, v) => {
+    if (ok) {
+      if (v != pid) {
+        Api.increasePlaylistPlayCount(pid).then(
+          r => r.data.ok ? console.log('updated playlist playcount successfully') : console.log('unable to update playlist playcount')).catch(
+            r => console.log('unable to update playlist playcount: networkError'))
+      }
+    }
+  })
+  updateCurrentPlayingPlaylist(pid)
   return rntp.setQueue(songs).then(() => {
     rntp.skip(index).then(() => {
       if (playAfter) {
@@ -97,4 +109,20 @@ function play() {
 
 }
 
-export { setPlayQueue, setCurrentTrack, play, setup, formatDuraton }
+function setupTemporaryStorage() {
+  storage.setItem('current-playing-playlist-id', null, k => { })
+  storage.setItem('current-playing-song-id', null, k => { })
+}
+
+function updateCurrentPlayingPlaylist(pid) {
+  storage.setItem('current-playing-playlist-id', pid, k => { })
+}
+
+function updateCurrentPlayingSong(sid) {
+  storage.setItem('current-playing-song-id', sid, k => { })
+}
+
+export {
+  setPlayQueue, setCurrentTrack, play, setup, formatDuraton, setupTemporaryStorage,
+  updateCurrentPlayingPlaylist, updateCurrentPlayingSong
+}

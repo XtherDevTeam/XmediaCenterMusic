@@ -18,7 +18,7 @@ import {
   DefaultTheme as NavigationDefaultTheme,
 } from '@react-navigation/native';
 import Home from './pages/Home';
-import { useEffect } from 'react';
+import React from 'react';
 
 import * as storage from './shared/storage'
 import axios from 'axios';
@@ -28,6 +28,9 @@ import Music from './pages/Music';
 import Player from './pages/Player';
 import PlaylistView from './pages/PlaylistView';
 import * as playerBackend from './shared/playerBackend'
+import { useActiveTrack, useProgress } from 'react-native-track-player';
+import * as Api from './shared/api'
+import About from './pages/About';
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -55,33 +58,66 @@ function MainPage({ }) {
 
 export default function App() {
   const scheme = useColorScheme()
-  console.log(scheme)
+  // console.log(scheme)
+
+  let playingProgress = useProgress()
+  let playingTrack = useActiveTrack()
+  let songCounted = React.useRef(false)
+  React.useEffect(() => {
+    playerBackend.setupTemporaryStorage()
+  }, [])
+  React.useEffect(() => {
+    songCounted.current = false
+    if (typeof(playingTrack) != "undefined" && typeof(playingTrack.description) != "undefined") {
+      console.log('updating current playing song', playingTrack.description)
+      playerBackend.updateCurrentPlayingSong(playingTrack.description)
+    }
+  }, [playingTrack])
+  React.useEffect(() => {
+    if (!songCounted.current && playingProgress.position > playingProgress.duration / 2) {
+      songCounted.current = true
+      storage.inquireItem('current-playing-song-id', (ok, v) => {
+        if (ok) {
+          Api.increaseSongPlayCount(v).then(
+            r => r.data.ok ? console.log('updated song playcount successfully') : console.log('unable to update song playcount')).catch(
+              r => console.log('unable to update song playcount: networkError'))
+        } else {
+          console.log('playerBackend temporary storage has not been initialized yet')
+        }
+      })
+    }
+  }, [playingProgress])
+
   return (
 
-      <PaperProvider theme={mdTheme()}>
-        <SafeAreaProvider>
-          <NavigationContainer theme={scheme === 'dark' ? DarkTheme : LightTheme}>
+    <PaperProvider theme={mdTheme()}>
+      <SafeAreaProvider>
+        <NavigationContainer theme={scheme === 'dark' ? DarkTheme : LightTheme}>
 
-            <Stack.Navigator initialRouteName='MainPage'>
-              <Stack.Screen name="SignIn" options={{ headerShown: false, tabBarVisible: false }} component={
-                SignIn
-              }
-              />
-              <Stack.Screen name="PlaylistView" options={{ headerShown: false, tabBarVisible: false }} component={
-                PlaylistView
-              }
-              />
-              <Stack.Screen name="Player" options={{ headerShown: false, tabBarVisible: false }} component={
-                Player
-              }
-              />
-              <Stack.Screen name="MainPage" options={{ headerShown: false }} component={
-                MainPage
-              }
-              />
-            </Stack.Navigator>
-          </NavigationContainer>
-        </SafeAreaProvider>
-      </PaperProvider>
+          <Stack.Navigator initialRouteName='MainPage'>
+            <Stack.Screen name="SignIn" options={{ headerShown: false, tabBarVisible: false }} component={
+              SignIn
+            }
+            />
+            <Stack.Screen name="PlaylistView" options={{ headerShown: false, tabBarVisible: false }} component={
+              PlaylistView
+            }
+            />
+            <Stack.Screen name="Player" options={{ headerShown: false, tabBarVisible: false }} component={
+              Player
+            }
+            />
+            <Stack.Screen name="About" options={{ headerShown: false, tabBarVisible: false }} component={
+              About
+            }
+            />
+            <Stack.Screen name="MainPage" options={{ headerShown: false }} component={
+              MainPage
+            }
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </PaperProvider>
   );
 }

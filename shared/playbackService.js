@@ -1,9 +1,6 @@
 import TrackPlayer, { Event } from "react-native-track-player"
 
 module.exports = async () => {
-    TrackPlayer.addEventListener('playback-progress-updated', () => {
-        
-    })
     TrackPlayer.addEventListener('remote-play', () => TrackPlayer.play())
     TrackPlayer.addEventListener('remote-pause', () => TrackPlayer.pause())
     TrackPlayer.addEventListener('remote-next', async () => {
