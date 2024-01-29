@@ -112,7 +112,7 @@ const PlaylistView = ({ navigation, route }) => {
         genre: 'Powered by xiaokang00010 with Naganohara Yoimiya',
         url: Api.getMusicPlaylistSongsFileSrc(playlist.id, i.id),
         duration: i.info.length,
-        description: toString(i.id),
+        description: i.id,
       })
     })
     return rntpStyle

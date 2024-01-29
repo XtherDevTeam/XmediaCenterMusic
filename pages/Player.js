@@ -103,6 +103,7 @@ const Player = ({ navigation, route }) => {
 
 
   React.useEffect(() => {
+    isCounted.current = false
     TrackPlayer.getQueue().then((q) => {
       setCurrentQueue(q)
     })
