@@ -15,6 +15,7 @@ import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
 import Message from '../components/Message';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import * as Clipboard from 'expo-clipboard';
+import { Audio } from 'expo-av';
 
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
@@ -25,6 +26,29 @@ let defaultConfirmDeletingDialogState = {
 }
 
 const Profile = ({ navigation, route }) => {
+  let [sound, setSound] = React.useState(null)
+
+  async function playSound() {
+    console.log('Loading Sound');
+    const { sound } = await Audio.Sound.createAsync(require('../assets/AboutPage.mp3'));
+    setSound(sound);
+
+    console.log('Playing Sound');
+    await sound.playAsync();
+  }
+
+  useFocusEffect(React.useCallback(() => {
+    playSound()
+  }, []))
+
+  React.useEffect(() => {
+    return sound ? () => {
+      console.log('Unloading Sound');
+      sound.unloadAsync();
+    } : undefined
+  }, [sound])
+
+
 
   return (
     <>
@@ -52,7 +76,7 @@ const Profile = ({ navigation, route }) => {
                     </Text>
                     <Text variant='bodyMedium'>
                       Therefore, I went out of the way to solve endless problems like the beginners touch a new thing for the first time.
-                      Finding relevent answers for my questions like "how to setup react-native-track-player playback notification properly" or
+                      Finding relevant answers for my questions like "how to setup react-native-track-player playback notification properly" or
                       "how to pack my application with Xcode managed provisioning profile in release mode" through ChatGPT and searching engines,
                       always makes my browser be filled with loads of tabs. Nevertheless, when I finally made this application work, can be without other music applications like NeteaseMusic,
                       and get rid of the annoying VIP-only sign, the result worths the work.
