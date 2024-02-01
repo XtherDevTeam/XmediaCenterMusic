@@ -25,13 +25,14 @@ let defaultConfirmDeletingDialogState = {
   state: false
 }
 
-const Profile = ({ navigation, route }) => {
+const About = ({ navigation, route }) => {
   let [sound, setSound] = React.useState(null)
 
   async function playSound() {
     console.log('Loading Sound');
     const { sound } = await Audio.Sound.createAsync(require('../assets/AboutPage.mp3'));
     setSound(sound);
+    
 
     console.log('Playing Sound');
     await sound.playAsync();
@@ -95,4 +96,4 @@ const Profile = ({ navigation, route }) => {
   )
 };
 
-export default withTheme(Profile);
+export default withTheme(About);

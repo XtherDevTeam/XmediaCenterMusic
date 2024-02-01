@@ -1,11 +1,11 @@
-import rntp, { State, Capability, AppKilledPlaybackBehavior } from 'react-native-track-player'
+import rntp, { State, Capability, AppKilledPlaybackBehavior, IOSCategory, IOSCategoryMode, IOSCategoryOptions } from 'react-native-track-player'
 import playbackService from './playbackService'
 import * as storage from './storage'
 import * as Api from './api'
 
 function setup() {
   (async () => {
-    await rntp.setupPlayer()
+    await rntp.setupPlayer({iosCategory: IOSCategory.Playback, iosCategoryMode: IOSCategoryMode.Default})
     await rntp.updateOptions({
       // Media controls capabilities
       capabilities: [
@@ -38,8 +38,9 @@ function setup() {
         // This is the default behavior
         appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
         stoppingAppPausesPlayback: true
-      },
+      }
     })
+        
   })()
 }
 
