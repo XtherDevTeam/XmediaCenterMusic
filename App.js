@@ -31,6 +31,7 @@ import * as playerBackend from './shared/playerBackend'
 import { useActiveTrack, useProgress } from 'react-native-track-player';
 import * as Api from './shared/api'
 import About from './pages/About';
+import Statistics from './pages/Statistics';
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -109,6 +110,10 @@ export default function App() {
             />
             <Stack.Screen name="About" options={{ headerShown: false, tabBarVisible: false }} component={
               About
+            }
+            />
+            <Stack.Screen name="Statistics" options={{ headerShown: false, tabBarVisible: false }} component={
+              Statistics
             }
             />
             <Stack.Screen name="MainPage" options={{ headerShown: false }} component={

@@ -91,6 +91,7 @@ const Profile = ({ navigation, route }) => {
       <Appbar.Header>
         <Appbar.Action icon={"logout"} onPress={() => signOut()} />
         <Appbar.Content title="Music"></Appbar.Content>
+        <Appbar.Action icon={"chart-bar"} onPress={() => navigation.navigate('Statistics')} />
       </Appbar.Header>
       <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
         <>

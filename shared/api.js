@@ -62,10 +62,10 @@ function basename(pathStr) {
 function checkIfLoggedIn() {
   return axios.get(`${storageUrl}/api/xms/v1/user/status`).then(r => {
     if (!r.data.ok) {
-      storage.removeItem('loginStatus', r => {})
+      storage.removeItem('loginStatus', r => { })
     }
     return r
-  }).catch(r => {throw r})
+  }).catch(r => { throw r })
 }
 
 function info() {
@@ -129,8 +129,7 @@ function getPlaylistArtworkPath(pid) {
 }
 
 function getSongArtworkPath(sid) {
-  return `${storageUrl}/api/xms/v1/mobile/music/song/${sid}/artwork?session=${
-    encodeURIComponent(session)}`
+  return `${storageUrl}/api/xms/v1/mobile/music/song/${sid}/artwork?session=${encodeURIComponent(session)}`
 }
 
 function musicPlaylistCreate(name, description) {
@@ -195,17 +194,19 @@ function submitLogin(username, password) {
   }).then(
     (r) => {
       if (r.ok) {
-        return axios.post(`${storageUrl}/api/xms/v1/signin`, { "username": username, "password": password }, {withCredentials: true}).then(r => {
-          r.headers["set-cookie"].at(0).split(";").forEach((i, j) => {
-            if (i.trim().substring(0, i.indexOf('=')) == 'session') {
-              session = i.trim().substring(i.indexOf('=') + 1)
-              storage.setItem('loginSession', session, r => {})
-            }
-          })
+        return axios.post(`${storageUrl}/api/xms/v1/signin`, { "username": username, "password": password }, { withCredentials: true }).then(r => {
+          if (r.data.ok) {
+            r.headers["set-cookie"].at(0).split(";").forEach((i, j) => {
+              if (i.trim().substring(0, i.indexOf('=')) == 'session') {
+                session = i.trim().substring(i.indexOf('=') + 1)
+                storage.setItem('loginSession', session, r => { })
+              }
+            })
+          }
           return r
         })
       } else {
-        return {data: r}
+        return { data: r }
       }
     }
   )
@@ -260,8 +261,7 @@ function musicPlaylistSongsSwap(playlistId, src, dest) {
 }
 
 function getMusicPlaylistSongsFileSrc(playlistId, songId) {
-  return `${storageUrl}/api/xms/v1/mobile/music/playlist/${playlistId}/songs/${songId}/file?session=${
-    encodeURIComponent(session)}`
+  return `${storageUrl}/api/xms/v1/mobile/music/playlist/${playlistId}/songs/${songId}/file?session=${encodeURIComponent(session)}`
 }
 
 function musicPlaylistEdit(playlistId, name, description) {
@@ -328,12 +328,16 @@ function userManageCreate(name, password, slogan, level) {
   return axios.post(`${storageUrl}/api/xms/v1/user/manage/create`, { name: name, password: password, slogan: slogan, level: level })
 }
 
-function increasePlaylistPlayCount (playlistId) {
+function increasePlaylistPlayCount(playlistId) {
   return axios.post(`${storageUrl}/api/xms/v1/music/playlist/${playlistId}/increasePlayCount`)
 }
 
-function increaseSongPlayCount (songId) {
+function increaseSongPlayCount(songId) {
   return axios.post(`${storageUrl}/api/xms/v1/music/song/${songId}/increasePlayCount`)
+}
+
+function musicStatistics() {
+  return axios.get(`${storageUrl}/api/xms/v1/music/statistics`)
 }
 
 export {
@@ -348,5 +352,6 @@ export {
   getShareLinkFilePath, getShareLinkDirFilePath, shareLinkDir, userTasks, infoPlugins,
   taskCreate, taskInfo, taskDelete, config, configUpdate, info, userManageDelete,
   userManageUpdateLevel, userManageList, userManageCreate, refreshStorageUrl,
-  userAvatarUrl, userHeadImgUrl, increasePlaylistPlayCount, increaseSongPlayCount
+  userAvatarUrl, userHeadImgUrl, increasePlaylistPlayCount, increaseSongPlayCount,
+  musicStatistics
 }
