@@ -15,6 +15,14 @@
       "**/*"
     ],
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
       "./plugins/withRemoveiOSNotificationEntitlement.js"
     ],
     "ios": {
@@ -45,7 +53,9 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "android.permission.FOREGROUND_SERVICE"
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.INTERNET",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ],
       "userInterfaceStyle": "automatic",
       "package": "com.jerrychau.XmediaCenterMusic"
