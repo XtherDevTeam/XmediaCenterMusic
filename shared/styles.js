@@ -1,5 +1,14 @@
-import { StyleSheet, useColorScheme } from "react-native";
-import { MD3DarkTheme, MD3LightTheme, useTheme } from "react-native-paper";
+import {
+  StyleSheet,
+  useColorScheme,
+} from 'react-native';
+import {
+  MD3DarkTheme,
+  MD3LightTheme,
+} from 'react-native-paper';
+
+import * as Theme from './theme';
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -11,11 +20,8 @@ const styles = StyleSheet.create({
 
 function mdTheme() {
     const scheme = useColorScheme()
-    const theme = scheme === 'dark' ? MD3DarkTheme : MD3LightTheme
+    const theme = scheme === 'dark' ? {...MD3DarkTheme, colors: Theme.default.dark.colors} : {...MD3LightTheme, colors: Theme.default.light.colors}
     return theme
 }
 
-
-export {
-    styles, mdTheme
-}
+export { mdTheme, styles };

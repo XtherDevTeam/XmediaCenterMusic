@@ -1,35 +1,44 @@
 import * as React from 'react';
-import { Appbar, Drawer, FAB, Icon, PaperProvider, Portal, adaptNavigationTheme, withTheme, Dialog, List, ProgressBar } from 'react-native-paper';
-import { Banner } from 'react-native-paper';
-import { Image, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import * as Clipboard from 'expo-clipboard';
 import * as documentPicker from 'expo-document-picker';
 import * as fs from 'expo-file-system';
-import { Text } from 'react-native-paper';
-import { Avatar } from 'react-native-paper';
-import { View } from 'react-native';
-import { TextInput } from 'react-native-paper';
-import { Button } from 'react-native-paper';
-import { mdTheme } from '../shared/styles';
-import * as storage from '../shared/storage';
-import * as Api from '../shared/api';
-import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
-import Message from '../components/Message';
-import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
-import Profile from './Profile';
-import * as Clipboard from 'expo-clipboard';
 import * as sharing from 'expo-sharing';
+import {
+  ScrollView,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import {
+  adaptNavigationTheme,
+  Appbar,
+  Button,
+  Dialog,
+  FAB,
+  List,
+  PaperProvider,
+  Portal,
+  ProgressBar,
+  Text,
+  TextInput,
+  withTheme,
+} from 'react-native-paper';
+
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
+  useFocusEffect,
 } from '@react-navigation/native';
-import Music from './Music';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import SignIn from './SignIn';
+
 import DirectoryView from '../components/DirectoryView';
-import PlaylistSelector from '../components/PlaylistSelector';
+import Message from '../components/Message';
 import PathInput from '../components/PathInput';
+import PlaylistSelector from '../components/PlaylistSelector';
 import TaskView from '../components/TaskView';
+import * as Api from '../shared/api';
+import * as storage from '../shared/storage';
+import { mdTheme } from '../shared/styles';
+
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme

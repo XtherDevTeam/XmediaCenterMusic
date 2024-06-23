@@ -1,21 +1,32 @@
 import * as React from 'react';
-import { Appbar, Card, Drawer, Icon, IconButton, PaperProvider, Portal, Surface, withTheme } from 'react-native-paper';
-import { Banner } from 'react-native-paper';
-import { Image, ImageBackground, Keyboard, Platform, ScrollView, TouchableWithoutFeedback } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Text } from 'react-native-paper';
-import { Avatar } from 'react-native-paper';
-import { View } from 'react-native';
-import { TextInput } from 'react-native-paper';
-import { Button } from 'react-native-paper';
-import { mdTheme } from '../shared/styles';
-import * as storage from '../shared/storage';
-import * as Api from '../shared/api';
-import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
+
+import {
+  ImageBackground,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import {
+  Appbar,
+  Card,
+  IconButton,
+  Portal,
+  Text,
+  withTheme,
+} from 'react-native-paper';
+import TrackPlayer, {
+  State,
+  useActiveTrack,
+  usePlaybackState,
+} from 'react-native-track-player';
+
+import { useFocusEffect } from '@react-navigation/native';
+
 import Message from '../components/Message';
-import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
-import rntp, { State, useActiveTrack, usePlaybackState } from 'react-native-track-player';
-import TrackPlayer from 'react-native-track-player';
+import * as Api from '../shared/api';
+import * as storage from '../shared/storage';
+import { mdTheme } from '../shared/styles';
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 

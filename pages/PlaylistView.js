@@ -1,28 +1,39 @@
 import * as React from 'react';
-import { Appbar, Card, DataTable, Dialog, Drawer, Icon, PaperProvider, Portal, Surface, adaptNavigationTheme, withTheme } from 'react-native-paper';
-import { Banner } from 'react-native-paper';
-import { Image, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Text } from 'react-native-paper';
-import { Avatar } from 'react-native-paper';
-import { View } from 'react-native';
-import { TextInput } from 'react-native-paper';
-import { Button } from 'react-native-paper';
-import { mdTheme } from '../shared/styles';
-import * as storage from '../shared/storage';
-import * as Api from '../shared/api';
-import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
-import Message from '../components/Message';
-import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
-import Profile from './Profile';
+
+import {
+  Image,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import {
+  adaptNavigationTheme,
+  Appbar,
+  Avatar,
+  Button,
+  Card,
+  DataTable,
+  Dialog,
+  Icon,
+  PaperProvider,
+  Portal,
+  Surface,
+  Text,
+  withTheme,
+} from 'react-native-paper';
+
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
 } from '@react-navigation/native';
-import Music from './Music';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import SignIn from './SignIn';
+
+import Message from '../components/Message';
+import * as Api from '../shared/api';
 import * as playerBackend from '../shared/playerBackend';
+import * as storage from '../shared/storage';
+import { mdTheme } from '../shared/styles';
+
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme

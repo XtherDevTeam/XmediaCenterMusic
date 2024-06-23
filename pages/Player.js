@@ -1,35 +1,50 @@
 import * as React from 'react';
-import { Appbar, DataTable, Drawer, Icon, IconButton, PaperProvider, Portal, Surface, adaptNavigationTheme, withTheme } from 'react-native-paper';
-import { Banner } from 'react-native-paper';
-import { Image, ImageBackground, Keyboard, Platform, ScrollView, TouchableWithoutFeedback, useColorScheme } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Text } from 'react-native-paper';
-import { Avatar } from 'react-native-paper';
-import { View } from 'react-native';
-import { TextInput } from 'react-native-paper';
-import { Button } from 'react-native-paper';
-import { mdTheme } from '../shared/styles';
-import * as storage from '../shared/storage';
-import * as Api from '../shared/api';
-import { NavigationContainer, useFocusEffect } from '@react-navigation/native';
-import Message from '../components/Message';
-import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
-import Profile from './Profile';
+
+import {
+  Image,
+  ImageBackground,
+  ScrollView,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import {
+  adaptNavigationTheme,
+  Appbar,
+  DataTable,
+  Icon,
+  IconButton,
+  PaperProvider,
+  Portal,
+  Surface,
+  Text,
+  withTheme,
+} from 'react-native-paper';
+import TrackPlayer, {
+  RepeatMode,
+  State,
+  useActiveTrack,
+  useIsPlaying,
+  useProgress,
+} from 'react-native-track-player';
+
+import Slide from '@react-native-assets/slider';
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
+  useFocusEffect,
 } from '@react-navigation/native';
-import Music from './Music';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import SignIn from './SignIn';
-import TrackPlayer, { Event, RepeatMode, State, useActiveTrack, useIsPlaying, useProgress } from 'react-native-track-player';
+
 import BottomDrawer from '../components/BottomDrawer';
+import Message from '../components/Message';
+import * as Api from '../shared/api';
+import { formatDuraton } from '../shared/playerBackend';
+import * as storage from '../shared/storage';
+import { mdTheme } from '../shared/styles';
+
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme
 });
-import Slide from '@react-native-assets/slider'
-import { formatDuraton } from '../shared/playerBackend';
 
 const MORE_ICON = 'dots-vertical';
 
