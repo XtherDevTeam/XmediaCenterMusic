@@ -1,6 +1,6 @@
-import axios from "axios"
-import * as fs from 'expo-file-system'
-import * as storage from "./storage"
+import axios from 'axios';
+
+import * as storage from './storage';
 
 let storageUrl = ""
 let session = ""
@@ -8,20 +8,28 @@ let session = ""
 
 
 function refreshStorageUrl() {
-  storage.inquireItem("serverAddress", (r, v) => {
-    if (!r) {
-      storageUrl = null
-    } else {
-      storageUrl = v
-    }
-  })
-  storage.inquireItem("loginSession", (r, v) => {
-    if (!r) {
-      session = ''
-    } else {
-      session = v
-    }
-  })
+  return Promise.all([
+    new Promise((resolve) => {
+      storage.inquireItem("serverAddress", (r, v) => {
+        if (!r) {
+          storageUrl = null
+        } else {
+          storageUrl = v
+        }
+        resolve()
+      })
+    }),
+    new Promise((resolve) => {
+      storage.inquireItem("loginSession", (r, v) => {
+        if (!r) {
+          session = ''
+        } else {
+          session = v
+        }
+        resolve()
+      })
+    })
+  ])
 }
 
 refreshStorageUrl()
@@ -65,7 +73,9 @@ function checkIfLoggedIn() {
       storage.removeItem('loginStatus', r => { })
     }
     return r
-  }).catch(r => { throw r })
+  }).catch(r => {
+    return { "data": { "ok": false, "msg": "network error" } };
+  })
 }
 
 function info() {
@@ -341,17 +351,64 @@ function musicStatistics() {
 }
 
 export {
-  submitLogin, submitSignup, checkIfLoggedIn, userInfo, driveDir, driveDelete,
-  signOut, getDownloadPath, driveRename, driveMove, driveCreateDir, driveUpload,
-  dirname, userShareLinks, userAvatarUpdate, userHeadImgUpdate, userSloganUpdate,
-  userUsernameUpdate, shareLinkCreate, userPasswordUpdate, basename, getShareLinkPath,
-  shareLinkDelete, driveCopy, getSongArtworkPath, getPlaylistArtworkPath, userPlaylists,
-  musicPlaylistCreate, musicPlaylistDelete, musicPlaylistSongsInsert, musicPlaylistSongs,
-  musicPlaylistInfo, musicPlaylistSongsSwap, musicPlaylistSongsDelete, getRndInteger,
-  getMusicPlaylistSongsFileSrc, getPlayTimeStr, musicPlaylistEdit, shareLinkInfo,
-  getShareLinkFilePath, getShareLinkDirFilePath, shareLinkDir, userTasks, infoPlugins,
-  taskCreate, taskInfo, taskDelete, config, configUpdate, info, userManageDelete,
-  userManageUpdateLevel, userManageList, userManageCreate, refreshStorageUrl,
-  userAvatarUrl, userHeadImgUrl, increasePlaylistPlayCount, increaseSongPlayCount,
-  musicStatistics
-}
+  basename,
+  checkIfLoggedIn,
+  config,
+  configUpdate,
+  dirname,
+  driveCopy,
+  driveCreateDir,
+  driveDelete,
+  driveDir,
+  driveMove,
+  driveRename,
+  driveUpload,
+  getDownloadPath,
+  getMusicPlaylistSongsFileSrc,
+  getPlaylistArtworkPath,
+  getPlayTimeStr,
+  getRndInteger,
+  getShareLinkDirFilePath,
+  getShareLinkFilePath,
+  getShareLinkPath,
+  getSongArtworkPath,
+  increasePlaylistPlayCount,
+  increaseSongPlayCount,
+  info,
+  infoPlugins,
+  musicPlaylistCreate,
+  musicPlaylistDelete,
+  musicPlaylistEdit,
+  musicPlaylistInfo,
+  musicPlaylistSongs,
+  musicPlaylistSongsDelete,
+  musicPlaylistSongsInsert,
+  musicPlaylistSongsSwap,
+  musicStatistics,
+  refreshStorageUrl,
+  shareLinkCreate,
+  shareLinkDelete,
+  shareLinkDir,
+  shareLinkInfo,
+  signOut,
+  submitLogin,
+  submitSignup,
+  taskCreate,
+  taskDelete,
+  taskInfo,
+  userAvatarUpdate,
+  userAvatarUrl,
+  userHeadImgUpdate,
+  userHeadImgUrl,
+  userInfo,
+  userManageCreate,
+  userManageDelete,
+  userManageList,
+  userManageUpdateLevel,
+  userPasswordUpdate,
+  userPlaylists,
+  userShareLinks,
+  userSloganUpdate,
+  userTasks,
+  userUsernameUpdate,
+};

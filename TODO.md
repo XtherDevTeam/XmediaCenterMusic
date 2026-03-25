@@ -1,0 +1,1 @@
+Refact the playback list into independent list, and persistent state should be employed.

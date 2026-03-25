@@ -4,8 +4,10 @@ import {
   Image,
   ImageBackground,
   ScrollView,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
+  Dimensions,
 } from 'react-native';
 import {
   adaptNavigationTheme,
@@ -33,13 +35,18 @@ import {
   DefaultTheme as NavigationDefaultTheme,
   useFocusEffect,
 } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BottomDrawer from '../components/BottomDrawer';
+import LyricView from '../components/LyricView';
 import Message from '../components/Message';
 import * as Api from '../shared/api';
+import { get_lyric_for, parse_lrc } from '../shared/lyricsManager';
 import { formatDuraton } from '../shared/playerBackend';
 import * as storage from '../shared/storage';
 import { mdTheme } from '../shared/styles';
+
+const { width, height } = Dimensions.get('window');
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -62,6 +69,9 @@ const Player = ({ navigation, route }) => {
   const [messageState, setMessageState] = React.useState(false)
   let [playQueueState, setPlayQueueState] = React.useState(false)
   const [messageText, setMessageText] = React.useState("")
+  let [showLyrics, setShowLyrics] = React.useState(false)
+  let [lyrics, setLyrics] = React.useState([])
+  const [lyricViewHeight, setLyricViewHeight] = React.useState(height * 0.6)
   let currentTrack = useActiveTrack()
 
   React.useEffect(() => {
@@ -124,6 +134,16 @@ const Player = ({ navigation, route }) => {
         })
       }
     })
+
+    if (currentTrack) {
+      get_lyric_for(currentTrack.title, currentTrack.album, currentTrack.artist).then(lrc => {
+        if (lrc) {
+          setLyrics(parse_lrc(lrc.lrc))
+        } else {
+          setLyrics([])
+        }
+      })
+    }
   }, [currentTrack])
 
   React.useEffect(() => {
@@ -145,35 +165,65 @@ const Player = ({ navigation, route }) => {
   }
 
   let theme = mdTheme()
+  const insets = useSafeAreaInsets()
 
   return (
     <PaperProvider theme={mdTheme()}>
       <>
 
 
-        {currentTrack !== undefined && <ImageBackground src={currentTrack.artwork} style={{ borderRadius: theme.roundness / 0.35, overflow: 'hidden' }} blurRadius={20}>
+        {currentTrack !== undefined && <ImageBackground source={{ uri: currentTrack.artwork }} style={{ height: '100%', borderRadius: theme.roundness / 0.35, overflow: 'hidden' }} blurRadius={20}>
 
-          <View style={{ height: '100%', backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255, 255, 255, 0.65)' }}>
+          <View style={{ flex: 1, backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255, 255, 255, 0.65)', paddingBottom: insets.top }}>
             <Appbar.Header style={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}>
               <Appbar.BackAction onPress={() => navigation.goBack()} />
               <Appbar.Content title="Player"></Appbar.Content>
             </Appbar.Header>
             <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
               <>
-                {/* Player controls */}
-                <View style={{ marginTop: 16, padding: 20, height: '100%', alignItems: 'center' }}>
-                  <Surface elevation={4} style={{ width: '80%', borderRadius: theme.roundness / 0.35 }}>
-                    <Image
-                      source={{ uri: currentTrack.artwork }}
-                      style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
-                    />
-                  </Surface>
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16 }}>
-                    {currentTrack.title == '' ? '<unknown>' : currentTrack.title}
-                  </Text>
-                  <Text style={{ fontSize: 16, color: theme.colors.secondary, marginTop: 4 }}>
-                    {currentTrack.artist == '' ? '<unknown>' : currentTrack.artist}
-                  </Text>
+                {/* Player content */}
+                <View
+                  style={{ flex: 1, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}
+                  onLayout={(e) => setLyricViewHeight(e.nativeEvent.layout.height)}
+                >
+                  {!showLyrics ? (
+                    <>
+                      <TouchableOpacity
+                        onPress={() => setShowLyrics(true)}
+                        activeOpacity={0.8}
+                        style={{ width: '80%', alignItems: 'center' }}
+                      >
+                        <Surface elevation={4} style={{ width: '100%', borderRadius: theme.roundness / 0.35 }}>
+                          <Image
+                            source={{ uri: currentTrack.artwork }}
+                            style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
+                          />
+                        </Surface>
+                      </TouchableOpacity>
+                      <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16 }} numberOfLines={1}>
+                        {currentTrack.title == '' ? '<unknown>' : currentTrack.title}
+                      </Text>
+                      <Text style={{ fontSize: 16, color: theme.colors.secondary, marginTop: 4 }} numberOfLines={1}>
+                        {currentTrack.artist == '' ? '<unknown>' : currentTrack.artist}
+                      </Text>
+                    </>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => setShowLyrics(false)}
+                      activeOpacity={1}
+                      style={{ width: '100%', flex: 1 }}
+                    >
+                      <LyricView
+                        lyrics={lyrics}
+                        currentTime={currentProgress.position}
+                        width={width - 40}
+                        height={lyricViewHeight}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 10 }}>
                   {/* Progress bar */}
                   <View style={{ flexDirection: 'row', width: '100%', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
                     <Text style={{ marginTop: 13, width: 48 }} variant='labelMedium'>{currentProgressStr[0]}</Text>

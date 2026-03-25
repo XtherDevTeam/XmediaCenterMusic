@@ -93,6 +93,7 @@ export default function App() {
 
     <PaperProvider theme={mdTheme()}>
       <SafeAreaProvider>
+        <StatusBar style="auto" translucent={true} backgroundColor="transparent" />
         <NavigationContainer theme={scheme === 'dark' ? DarkTheme : LightTheme}>
 
           <Stack.Navigator initialRouteName='MainPage'>

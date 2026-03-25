@@ -65,40 +65,41 @@ const SignIn = ({ navigation, route }) => {
 
   const onSubmit = () => {
     console.log(serverAddressState, usernameState, passwordState)
-    storage.setItem('serverAddress', serverAddressState, (r) => {
-      if (!r) {
-        setMessageText("Unable to store server address.")
-        setMessageState(true)
+    
+    const storeServer = new Promise((resolve) => storage.setItem('serverAddress', serverAddressState, resolve));
+    const storeUsername = new Promise((resolve) => storage.setItem('username', usernameState, resolve));
+
+    Promise.all([storeServer, storeUsername]).then(([r1, r2]) => {
+      if (!r1 || !r2) {
+        setMessageText("Unable to store configuration.");
+        setMessageState(true);
+        return;
       }
-    })
-    storage.setItem('username', usernameState, (r) => {
-      if (!r) {
-        setMessageText("Unable to store username.")
-        setMessageState(true)
-      }
-    })
-    Api.refreshStorageUrl()
-    Api.submitLogin(usernameState, passwordState).then((result) => {
-      if (result.data.ok) {
-        storage.setItem('loginStatus', result.data.data, (r) => {
-          if (!r) {
-            setMessageText("Unable to store login status.")
+      
+      Api.refreshStorageUrl().then(() => {
+        Api.submitLogin(usernameState, passwordState).then((result) => {
+          if (result.data.ok) {
+            storage.setItem('loginStatus', result.data.data, (r) => {
+              if (!r) {
+                setMessageText("Unable to store login status.")
+                setMessageState(true)
+              }
+              if (route.params.hasOwnProperty("initialPage") === true) {
+                route.params.initialPage = false
+              }
+              navigation.goBack()
+            })
+          } else {
+            setMessageText(`Unable to login: ${result.data.data}`)
             setMessageState(true)
           }
-          if (route.params.hasOwnProperty("initialPage") === true) {
-            route.params.initialPage = false
-          }
-          navigation.goBack()
+        }, (err) => {
+          console.log(JSON.stringify(err))
+          setMessageText("Unable to login: NetworkError")
+          setMessageState(true)
         })
-      } else {
-        setMessageText(`Unable to login: ${result.data.data}`)
-        setMessageState(true)
-      }
-    }, (err) => {
-      console.log(JSON.stringify(err))
-      setMessageText("Unable to login: NetworkError")
-      setMessageState(true)
-    })
+      });
+    });
   }
 
   return (

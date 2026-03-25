@@ -147,8 +147,7 @@ const Home = ({ navigation, route }) => {
             })
           }
         }).catch((e) => {
-          setMessageText(`Error querying user information: NetworkError`)
-          setMessageState(true)
+          navigation.navigate('SignIn', { initialPage: true })
         })
       })
     }, [])
