@@ -1,4 +1,4 @@
-let light = {
+export const light = {
     "colors": {
         "primary": "rgb(154, 69, 37)",
         "onPrimary": "rgb(255, 255, 255)",
@@ -42,7 +42,8 @@ let light = {
         "backdrop": "rgba(59, 45, 41, 0.4)"
     }
 }
-let dark = {
+
+export const dark = {
     "colors": {
         "primary": "rgb(255, 181, 156)",
         "onPrimary": "rgb(92, 25, 0)",
@@ -85,9 +86,4 @@ let dark = {
         "onSurfaceDisabled": "rgba(237, 224, 220, 0.38)",
         "backdrop": "rgba(59, 45, 41, 0.4)"
     }
-}
-
-export default {
-    light,
-    dark
 }

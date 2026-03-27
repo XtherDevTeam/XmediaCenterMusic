@@ -64,7 +64,7 @@ const About = ({ navigation, route }) => {
                 <Card.Cover source={require('../assets/yoimiya.jpg')} style={{ height: 128 }} />
                 <Card.Content style={{ marginTop: 15 }}>
                   <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Avatar.Image source={require('../assets/icon.png')} size={56}></Avatar.Image>
+                    <Avatar.Image source={require('../assets/kiana.png')} size={56}></Avatar.Image>
                     <Text variant="titleLarge">XmediaCenter 2 Music</Text>
                     <Text variant="bodyMedium" style={{ textAlign: 'center' }}>Version: 1.0.0(1)</Text>
                     <Text variant="bodyMedium" style={{ textAlign: 'center' }}>Made with ❤️ by Jerry Chou and Naganohara Yoimiya</Text>

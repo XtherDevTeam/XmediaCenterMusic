@@ -8,7 +8,12 @@ console.log("[PlayerBackend] Loading module...");
 
 export function setup() {
   (async () => {
-    await rntp.setupPlayer({ iosCategory: IOSCategory.Playback, iosCategoryMode: IOSCategoryMode.Default })
+    try {
+      await rntp.setupPlayer({ iosCategory: IOSCategory.Playback, iosCategoryMode: IOSCategoryMode.Default })
+    } catch (error) {
+      console.log(error)
+    }
+
     await rntp.updateOptions({
       // Media controls capabilities
       capabilities: [

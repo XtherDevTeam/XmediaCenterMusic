@@ -110,7 +110,8 @@ const Profile = ({ navigation, route }) => {
       <Appbar.Header>
         <Appbar.Action icon={"logout"} onPress={() => signOut()} />
         <Appbar.Content title="Profile"></Appbar.Content>
-        <Appbar.Action  icon={"information-outline"} onPress={() => navigation.navigate('About', {})} />
+        <Appbar.Action icon={"cog"} onPress={() => navigation.navigate('Settings', {})} />
+        <Appbar.Action icon={"information-outline"} onPress={() => navigation.navigate('About', {})} />
       </Appbar.Header>
       <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
         <>

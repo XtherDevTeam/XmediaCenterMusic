@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Image, useColorScheme, AppRegistry } from 'react-native';
+import { StyleSheet, Text, View, Image, useColorScheme, AppRegistry, Keyboard } from 'react-native';
+
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import SignIn from './pages/SignIn';
@@ -32,7 +33,9 @@ import rntp, { useActiveTrack, useProgress } from 'react-native-track-player';
 import * as Api from './shared/api'
 import About from './pages/About';
 import Statistics from './pages/Statistics';
+import Settings from './pages/Settings';
 import MiniPlayer from './components/MiniPlayer';
+
 
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
@@ -44,6 +47,24 @@ const Stack = createNativeStackNavigator()
 const Tab = createMaterialBottomTabNavigator()
 
 function MainPage({ }) {
+  const [isKeyboardVisible, setKeyboardVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidHideListener.remove();
+      keyboardDidShowListener.remove();
+    };
+  }, []);
+
   return (
     <View style={{ flex: 1 }}>
       <Tab.Navigator>
@@ -57,9 +78,11 @@ function MainPage({ }) {
           tabBarIcon: "account-circle"
         }} name="Profile" component={Profile} />
       </Tab.Navigator>
-      <View style={{ position: 'absolute', bottom: 80, left: 0, right: 0 }}>
-        <MiniPlayer />
-      </View>
+      {!isKeyboardVisible && (
+        <View style={{ position: 'absolute', bottom: 80, left: 0, right: 0 }}>
+          <MiniPlayer />
+        </View>
+      )}
     </View>
   )
 }
@@ -142,10 +165,15 @@ export default function App() {
                 Statistics
               }
               />
+              <Stack.Screen name="Settings" options={{ headerShown: false, tabBarVisible: false }} component={
+                Settings
+              }
+              />
               <Stack.Screen name="MainPage" options={{ headerShown: false }} component={
                 MainPage
               }
               />
+
             </Stack.Navigator>
           </NavigationContainer>
         </SafeAreaProvider>

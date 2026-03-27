@@ -10,6 +10,7 @@ import {
 import {
   Appbar,
   Card,
+  FAB,
   IconButton,
   Portal,
   Text,
@@ -24,11 +25,13 @@ import TrackPlayer, {
 import { useFocusEffect } from '@react-navigation/native';
 
 import Message from '../components/Message';
+import CreatePlaylistDialog from '../components/CreatePlaylistDialog';
 import * as Api from '../shared/api';
 import * as storage from '../shared/storage';
 import { mdTheme } from '../shared/styles';
 
 import MiniPlayer from '../components/MiniPlayer';
+
 
 const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
@@ -39,9 +42,25 @@ const Profile = ({ navigation, route }) => {
   let playerState = usePlaybackState()
   const [messageState, setMessageState] = React.useState(false)
   const [messageText, setMessageText] = React.useState("")
+  const [createPlaylistDialogVisible, setCreatePlaylistDialogVisible] = React.useState(false)
   const theme = mdTheme()
 
+  const fetchPlaylists = () => {
+    Api.userPlaylists().then(data => {
+      if (data.data.ok) {
+        setPlaylists(data.data.data)
+      } else {
+        setMessageText(`Unable to fetch user playlists: ${data.data.data}`)
+        setMessageState(true)
+      }
+    }).catch(err => {
+      setMessageText("Unable to fetch user playlists: NetworkError")
+      setMessageState(true)
+    })
+  }
+
   useFocusEffect(
+
     React.useCallback(() => {
       storage.inquireItem('loginStatus', (result, v) => {
         if (!result) {
@@ -71,19 +90,8 @@ const Profile = ({ navigation, route }) => {
   )
 
   React.useEffect(() => {
-    if (userInfo != {}) {
-      Api.userPlaylists().then(data => {
-        if (data.data.ok) {
-          console.log(data.data.data)
-          setPlaylists(data.data.data)
-        } else {
-          setMessageText(`Unable to fetch user playlists: ${data.data.data}`)
-          setMessageState(true)
-        }
-      }).catch(err => {
-        setMessageText("Unable to fetch user playlists: NetworkError")
-        setMessageState(true)
-      })
+    if (Object.keys(userInfo).length !== 0) {
+      fetchPlaylists()
     }
   }, [userInfo])
 
@@ -125,7 +133,38 @@ const Profile = ({ navigation, route }) => {
           </ScrollView>
           <Portal>
             <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
+            <CreatePlaylistDialog
+              visible={createPlaylistDialogVisible}
+              onDismiss={React.useCallback(() => setCreatePlaylistDialogVisible(false), [])}
+              onCreate={React.useCallback(async (name, description) => {
+                try {
+                  const res = await Api.musicPlaylistCreate(name, description);
+                  if (res.data.ok) {
+                    fetchPlaylists();
+                    setMessageText("Playlist created successfully");
+                    setMessageState(true);
+                  } else {
+                    setMessageText("Failed to create playlist: " + res.data.data);
+                    setMessageState(true);
+                  }
+                } catch (e) {
+                  setMessageText("Failed to create playlist: NetworkError");
+                  setMessageState(true);
+                }
+              }, [])}
+            />
+
           </Portal>
+          <FAB
+            icon="plus"
+            style={{
+              position: 'absolute',
+              margin: 16,
+              right: 0,
+              bottom: 80,
+            }}
+            onPress={() => setCreatePlaylistDialogVisible(true)}
+          />
         </View>
       </TouchableWithoutFeedback >
     </View>

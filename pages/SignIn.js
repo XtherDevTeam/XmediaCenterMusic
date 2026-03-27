@@ -111,11 +111,11 @@ const SignIn = ({ navigation, route }) => {
         <TouchableWithoutFeedback onPress={handlePress} accessible={false}>
           <View style={{ justifyContent: 'center', alignItems: 'center' }}>
             <Avatar.Image
-              source={require('../assets/new.png')}
+              source={require('../assets/kiana.png')}
               size={100}
               style={{ marginTop: 20 }}
             />
-            <Text variant="headlineSmall" style={{ marginTop: 20 }}>Welcome to XmediaCenter Music</Text>
+            <Text variant="headlineSmall" style={{ marginTop: 20, textAlign: 'center' }}>Welcome to XmediaCenter Music</Text>
 
             <TextInput
               label="Server Address"

@@ -7,7 +7,7 @@ import {
   MD3LightTheme,
 } from 'react-native-paper';
 
-import * as Theme from './theme';
+import * as Theme from './theme.new';
 
 const styles = StyleSheet.create({
     container: {
@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
 
 function mdTheme() {
     const scheme = useColorScheme()
-    const theme = scheme === 'dark' ? {...MD3DarkTheme, colors: Theme.default.dark.colors} : {...MD3LightTheme, colors: Theme.default.light.colors}
+    const theme = scheme === 'dark' ? {...MD3DarkTheme, colors: Theme.dark.colors} : {...MD3LightTheme, colors: Theme.light.colors}
     return theme
 }
 
