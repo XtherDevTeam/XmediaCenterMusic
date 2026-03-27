@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableWithoutFeedback } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 
 /**
@@ -9,7 +9,8 @@ import { Text, useTheme } from 'react-native-paper';
  * @param {number} width - Component width
  * @param {number} height - Component height
  */
-const LyricView = ({ lyrics = [], currentTime = 0, width, height }) => {
+const LyricView = ({ lyrics = [], currentTime = 0, width, height, onLyricPress, onLyricLongPress }) => {
+  const defaultLyricOffset = -1.0; // -1.0s
   const theme = useTheme();
   const scrollViewRef = useRef(null);
   const [lineLayouts, setLineLayouts] = useState({});
@@ -17,7 +18,7 @@ const LyricView = ({ lyrics = [], currentTime = 0, width, height }) => {
   // Find the index of the current lyric line
   const currentLineIndex = lyrics.findIndex((line, index) => {
     const nextLine = lyrics[index + 1];
-    return currentTime >= line.time && (!nextLine || currentTime < nextLine.time);
+    return currentTime >= line.time + defaultLyricOffset && (!nextLine || currentTime < nextLine.time + defaultLyricOffset);
   });
 
   // Auto-scroll to center the current line
@@ -38,9 +39,11 @@ const LyricView = ({ lyrics = [], currentTime = 0, width, height }) => {
 
   if (!lyrics || lyrics.length === 0) {
     return (
-      <View style={[styles.center, { width, height }]}>
-        <Text style={{ color: theme.colors.onSurfaceVariant, opacity: 0.5 }}>No lyrics available</Text>
-      </View>
+      <TouchableWithoutFeedback onPress={() => onLyricPress()} onLongPress={() => onLyricLongPress(null)}>
+        <View style={[styles.center, { width, height }]}>
+          <Text style={{ color: theme.colors.onSurfaceVariant, opacity: 0.5 }}>No lyrics available</Text>
+        </View>
+      </TouchableWithoutFeedback>
     );
   }
 
@@ -53,32 +56,34 @@ const LyricView = ({ lyrics = [], currentTime = 0, width, height }) => {
         scrollEventThrottle={16}
       >
         {lyrics.map((line, index) => (
-          <Text
-            key={`${line.time}-${index}`}
-            onLayout={(e) => {
-              const layout = e.nativeEvent.layout;
-              setLineLayouts(prev => {
-                // Only update if layout significantly changed to avoid performance issues
-                if (prev[index] && Math.abs(prev[index].y - layout.y) < 0.5 && Math.abs(prev[index].height - layout.height) < 0.5) {
-                  return prev;
+          <TouchableWithoutFeedback onPress={() => onLyricPress()} style={{ width: '100%' }} onLongPress={() => onLyricLongPress(line)}>
+            <Text
+              key={`${line.time}-${index}`}
+              onLayout={(e) => {
+                const layout = e.nativeEvent.layout;
+                setLineLayouts(prev => {
+                  // Only update if layout significantly changed to avoid performance issues
+                  if (prev[index] && Math.abs(prev[index].y - layout.y) < 0.5 && Math.abs(prev[index].height - layout.height) < 0.5) {
+                    return prev;
+                  }
+                  return { ...prev, [index]: layout };
+                });
+              }}
+              style={[
+                styles.lyricLine,
+                { color: theme.colors.onSurfaceVariant, opacity: 0.4 },
+                index === currentLineIndex && {
+                  color: theme.colors.primary,
+                  opacity: 1,
+                  fontWeight: 'bold',
+                  fontSize: 22,
+                  transform: [{ scale: 1.1 }]
                 }
-                return { ...prev, [index]: layout };
-              });
-            }}
-            style={[
-              styles.lyricLine,
-              { color: theme.colors.onSurfaceVariant, opacity: 0.4 },
-              index === currentLineIndex && {
-                color: theme.colors.primary,
-                opacity: 1,
-                fontWeight: 'bold',
-                fontSize: 22,
-                transform: [{ scale: 1.1 }]
-              }
-            ]}
-          >
-            {line.text}
-          </Text>
+              ]}
+            >
+              {line.text}
+            </Text>
+          </TouchableWithoutFeedback>
         ))}
       </ScrollView>
     </View>
@@ -98,8 +103,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     textAlign: 'center',
     marginBottom: 24,
-    minHeight: 32,
-    transitionDuration: '0.3s'
+    minHeight: 32
   },
 });
 

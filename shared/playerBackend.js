@@ -3,9 +3,12 @@ import playbackService from './playbackService'
 import * as storage from './storage'
 import * as Api from './api'
 
-function setup() {
+
+console.log("[PlayerBackend] Loading module...");
+
+export function setup() {
   (async () => {
-    await rntp.setupPlayer({iosCategory: IOSCategory.Playback, iosCategoryMode: IOSCategoryMode.Default})
+    await rntp.setupPlayer({ iosCategory: IOSCategory.Playback, iosCategoryMode: IOSCategoryMode.Default })
     await rntp.updateOptions({
       // Media controls capabilities
       capabilities: [
@@ -40,22 +43,48 @@ function setup() {
         stoppingAppPausesPlayback: true
       }
     })
-        
+
+    // Restore persistent state
+    await loadPlaybackState()
   })()
 }
 
-function setPlayQueue() {
-  rntp.setQueue(songs)
+export async function loadPlaybackState() {
+  return new Promise((resolve) => {
+    storage.inquireItem('playback-list', async (ok, list) => {
+      if (ok && Array.isArray(list) && list.length > 0) {
+        console.log(`[PlayerBackend] Restoring playback list with ${list.length} tracks`)
+        await rntp.setQueue(list)
+
+        storage.inquireItem('last-played-index', async (okIndex, index) => {
+          const targetIndex = okIndex ? index : 0
+          await rntp.skip(targetIndex)
+
+          storage.inquireItem('last-played-position', async (okPos, pos) => {
+            if (okPos && pos > 0) {
+              await rntp.seekTo(pos)
+            }
+            resolve()
+          })
+        })
+      } else {
+        resolve()
+      }
+    })
+  })
 }
 
-function formatDuraton(time) {
+export function setPlayQueue(songs) {
+  savePlaybackList(songs)
+  return rntp.setQueue(songs)
+}
+
+export function formatDuraton(time) {
   if (time > -1) {
     var hour = Math.floor(time / 3600);
     var min = Math.floor(time / 60) % 60;
     var sec = Math.floor(time % 60);
-    // console.log(hour, min, sec)
     if (hour == 0) {
-      // do nothing
       time = ""
     } else if (hour < 10) {
       time = '0' + hour + ":";
@@ -76,22 +105,28 @@ function formatDuraton(time) {
   return time;
 }
 
-function setCurrentTrack(pid, songs, index, playAfter) {
-  storage.inquireItem('current-playing-playlist-id', (ok, v) => {
-    if (ok) {
-      if (v != pid) {
-        Api.increasePlaylistPlayCount(pid).then(
-          r => r.data.ok ? console.log('updated playlist playcount successfully') : console.log('unable to update playlist playcount')).catch(
-            r => console.log('unable to update playlist playcount: networkError'))
+export function setCurrentTrack(pid, songs, index, playAfter) {
+  // Persistence
+  savePlaybackList(songs)
+  saveCurrentIndex(index)
+
+  if (pid) {
+    storage.inquireItem('current-playing-playlist-id', (ok, v) => {
+      if (ok) {
+        if (v != pid) {
+          Api.increasePlaylistPlayCount(pid).then(
+            r => r.data.ok ? console.log('updated playlist playcount successfully') : console.log('unable to update playlist playcount')).catch(
+              r => console.log('unable to update playlist playcount: networkError'))
+        }
       }
-    }
-  })
-  updateCurrentPlayingPlaylist(pid)
+    })
+    updateCurrentPlayingPlaylist(pid)
+  }
+
   return rntp.setQueue(songs).then(() => {
-    rntp.skip(index).then(() => {
+    return rntp.skip(index).then(() => {
       if (playAfter) {
-        play().then(() => {
-          console.log("???")
+        return play().then(() => {
           rntp.getPlaybackState().then((v) => {
             console.log(v)
           })
@@ -103,27 +138,55 @@ function setCurrentTrack(pid, songs, index, playAfter) {
   })
 }
 
-function play() {
+export function addTracksToQueue(newTracks) {
+  return new Promise((resolve) => {
+    storage.inquireItem('playback-list', async (ok, list) => {
+      const currentList = ok ? list : []
+      const updatedList = [...currentList, ...newTracks]
+      savePlaybackList(updatedList)
+      await rntp.add(newTracks)
+      resolve(updatedList)
+    })
+  })
+}
+
+export function play() {
   return rntp.setPlayWhenReady(true).then((v) => {
     return rntp.play()
   })
-
 }
 
-function setupTemporaryStorage() {
-  storage.setItem('current-playing-playlist-id', null, k => { })
-  storage.setItem('current-playing-song-id', null, k => { })
+export function savePlaybackList(list) {
+  storage.setItem('playback-list', list, () => { })
 }
 
-function updateCurrentPlayingPlaylist(pid) {
+export function saveCurrentIndex(index) {
+  storage.setItem('last-played-index', index, () => { })
+}
+
+export function savePosition(position) {
+  storage.setItem('last-played-position', position, () => { })
+}
+
+export function updateCurrentPlayingPlaylist(pid) {
   storage.setItem('current-playing-playlist-id', pid, k => { })
 }
 
-function updateCurrentPlayingSong(sid) {
+export function updateCurrentPlayingSong(sid) {
   storage.setItem('current-playing-song-id', sid, k => { })
 }
 
-export {
-  setPlayQueue, setCurrentTrack, play, setup, formatDuraton, setupTemporaryStorage,
-  updateCurrentPlayingPlaylist, updateCurrentPlayingSong
+export async function removeTrackFromQueue(index) {
+  return new Promise((resolve) => {
+    storage.inquireItem('playback-list', async (ok, list) => {
+      if (ok && Array.isArray(list)) {
+        const updatedList = list.filter((_, i) => i !== index)
+        savePlaybackList(updatedList)
+        await rntp.remove(index)
+        resolve(updatedList)
+      } else {
+        resolve([])
+      }
+    })
+  })
 }

@@ -198,25 +198,61 @@ const PlaylistView = ({ navigation, route }) => {
               </Card>
             </ScrollView>
             <Dialog visible={deleteSongDialogState.state} dismissable={true} onDismiss={() => setDeleteSongDialogState(defaultDeleteSongDialogState)}>
-              <Dialog.Title>Delete song from playlist</Dialog.Title>
-              <Dialog.Content><Text variant='bodyMedium'>Are you really going to delete {deleteSongDialogState.item.info.title} from playlist?</Text></Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setDeleteSongDialogState(deleteSongDialogState)}>Cancel</Button>
-                <Button onPress={() => Api.musicPlaylistSongsDelete(playlist.id, deleteSongDialogState.item.id).then(d => {
-                  if (d.data.ok) {
-                    refreshPlaylist()
-                    setMessageText(`Deleted ${deleteSongDialogState.item.info.title} successfully`)
+              <Dialog.Title>{deleteSongDialogState.item.info.title}</Dialog.Title>
+              <Dialog.Content>
+                <Text variant='bodyLarge' style={{ fontWeight: 'bold', paddingRight: 5 }}>
+                  Artist
+                </Text>
+                <Text
+                  variant='bodyLarge'
+                  style={{ color: theme.colors.secondary, marginTop: 4 }}
+                >
+
+                  {deleteSongDialogState.item.info.artist}
+                </Text>
+                <Text variant='bodyLarge' style={{ fontWeight: 'bold' }}>
+                  Album
+                </Text>
+                <Text
+                  variant='bodyLarge'
+                  style={{ color: theme.colors.secondary, marginTop: 4 }}
+                >
+
+                  {deleteSongDialogState.item.info.album}
+                </Text>
+              </Dialog.Content>
+              <Dialog.Actions >
+                <View style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <Button onPress={() => {
+                    playerBackend.setCurrentTrack(playlist.id, rntpStylePlaylist.current, playlistSongs.indexOf(deleteSongDialogState.item), true)
+                    setDeleteSongDialogState(defaultDeleteSongDialogState)
+                    navigation.navigate('Player', {})
+                  }}>Play Now</Button>
+                  <Button onPress={() => {
+                    const rntpTrack = covertPlaylistAsRntpStyle([deleteSongDialogState.item])
+                    playerBackend.addTracksToQueue(rntpTrack).then(() => {
+                      setMessageText(`Added ${deleteSongDialogState.item.info.title} to queue`)
+                      setMessageState(true)
+                      setDeleteSongDialogState(defaultDeleteSongDialogState)
+                    })
+                  }}>Add to Queue</Button>
+                  <Button onPress={() => Api.musicPlaylistSongsDelete(playlist.id, deleteSongDialogState.item.id).then(d => {
+                    if (d.data.ok) {
+                      refreshPlaylist()
+                      setMessageText(`Deleted ${deleteSongDialogState.item.info.title} successfully`)
+                      setMessageState(true)
+                    } else {
+                      setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : ${d.data.data}`)
+                      setMessageState(true)
+                    }
+                    setDeleteSongDialogState(defaultDeleteSongDialogState)
+                  }).catch(e => {
+                    setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : NetworkError`)
                     setMessageState(true)
-                  } else {
-                    setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : ${d.data.data}`)
-                    setMessageState(true)
-                  }
-                  setDeleteSongDialogState(defaultDeleteSongDialogState)
-                }).catch(e => {
-                  setMessageText(`Unable to delete ${deleteSongDialogState.item.info.title} : NetworkError`)
-                  setMessageState(true)
-                  setDeleteSongDialogState(defaultDeleteSongDialogState)
-                })}>Continue</Button>
+                    setDeleteSongDialogState(defaultDeleteSongDialogState)
+                  })} textColor={theme.colors.error}>Delete from Playlist</Button>
+                  <Button onPress={() => setDeleteSongDialogState(defaultDeleteSongDialogState)}>Cancel</Button>
+                </View>
               </Dialog.Actions>
             </Dialog>
             <Portal>

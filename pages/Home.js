@@ -206,7 +206,7 @@ const Home = ({ navigation, route }) => {
           <Appbar.Action icon={"logout"} onPress={() => signOut()} />
           <Appbar.Content title="Home"></Appbar.Content>
         </Appbar.Header>
-        <ScrollView>
+        <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <DirectoryView
               onRef={directoryViewRef}
@@ -606,7 +606,7 @@ const Home = ({ navigation, route }) => {
               position: 'absolute',
               margin: 16,
               right: 0,
-              bottom: 0
+              bottom: 70
             }}
             onPress={() => setShowMoreOptions(true)}
           />

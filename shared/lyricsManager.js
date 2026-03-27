@@ -95,4 +95,13 @@ const parse_lrc = (lrcString) => {
 };
 
 
-export { get_lyric_for, parse_lrc }
+function invalidate_lyric_cache(title, album, artist) {
+    return new Promise((resolve) => {
+        storage.removeItem(`lyric_${title}_${album}_${artist}`, (ok) => {
+            get_lyric_for(title, album, artist).then(resolve);
+        });
+    });
+}
+
+
+export { get_lyric_for, parse_lrc, invalidate_lyric_cache }

@@ -114,7 +114,7 @@ const Profile = ({ navigation, route }) => {
       </Appbar.Header>
       <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
         <>
-          <ScrollView>
+          <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
             <View style={{ justifyContent: 'center', alignItems: 'center' }}>
               <Card style={{ width: "95%" }}>
                 <Card.Cover source={{ uri: Api.userHeadImgUrl(userInfo.id) }} style={{ height: 128 }} />

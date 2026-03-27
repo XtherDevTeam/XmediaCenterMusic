@@ -28,10 +28,12 @@ import Music from './pages/Music';
 import Player from './pages/Player';
 import PlaylistView from './pages/PlaylistView';
 import * as playerBackend from './shared/playerBackend'
-import { useActiveTrack, useProgress } from 'react-native-track-player';
+import rntp, { useActiveTrack, useProgress } from 'react-native-track-player';
 import * as Api from './shared/api'
 import About from './pages/About';
 import Statistics from './pages/Statistics';
+import MiniPlayer from './components/MiniPlayer';
+
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -43,19 +45,26 @@ const Tab = createMaterialBottomTabNavigator()
 
 function MainPage({ }) {
   return (
-    <Tab.Navigator>
-      <Tab.Screen name="Home" options={{
-        tabBarIcon: "home"
-      }} component={Home} />
-      <Tab.Screen options={{
-        tabBarIcon: "music"
-      }} name="Music" component={Music} />
-      <Tab.Screen options={{
-        tabBarIcon: "account-circle"
-      }} name="Profile" component={Profile} />
-    </Tab.Navigator>
+    <View style={{ flex: 1 }}>
+      <Tab.Navigator>
+        <Tab.Screen name="Home" options={{
+          tabBarIcon: "home"
+        }} component={Home} />
+        <Tab.Screen options={{
+          tabBarIcon: "music"
+        }} name="Music" component={Music} />
+        <Tab.Screen options={{
+          tabBarIcon: "account-circle"
+        }} name="Profile" component={Profile} />
+      </Tab.Navigator>
+      <View style={{ position: 'absolute', bottom: 80, left: 0, right: 0 }}>
+        <MiniPlayer />
+      </View>
+    </View>
   )
 }
+
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function App() {
   const scheme = useColorScheme()
@@ -65,11 +74,11 @@ export default function App() {
   let playingTrack = useActiveTrack()
   let songCounted = React.useRef(false)
   React.useEffect(() => {
-    playerBackend.setupTemporaryStorage()
+    playerBackend.setup()
   }, [])
   React.useEffect(() => {
     songCounted.current = false
-    if (typeof(playingTrack) != "undefined" && typeof(playingTrack.description) != "undefined") {
+    if (typeof (playingTrack) != "undefined" && typeof (playingTrack.description) != "undefined") {
       console.log('updating current playing song', playingTrack.description)
       playerBackend.updateCurrentPlayingSong(playingTrack.description)
     }
@@ -89,41 +98,58 @@ export default function App() {
     }
   }, [playingProgress])
 
+  React.useEffect(() => {
+    if (playingProgress.position > 0) {
+      playerBackend.savePosition(playingProgress.position)
+    }
+  }, [playingProgress.position])
+
+  React.useEffect(() => {
+    if (playingTrack) {
+      rntp.getActiveTrackIndex().then(index => {
+        if (typeof index === 'number') {
+          playerBackend.saveCurrentIndex(index)
+        }
+      })
+    }
+  }, [playingTrack])
+
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider theme={mdTheme()}>
+        <SafeAreaProvider>
+          <StatusBar style="auto" translucent={true} backgroundColor="transparent" />
+          <NavigationContainer theme={scheme === 'dark' ? DarkTheme : LightTheme}>
 
-    <PaperProvider theme={mdTheme()}>
-      <SafeAreaProvider>
-        <StatusBar style="auto" translucent={true} backgroundColor="transparent" />
-        <NavigationContainer theme={scheme === 'dark' ? DarkTheme : LightTheme}>
-
-          <Stack.Navigator initialRouteName='MainPage'>
-            <Stack.Screen name="SignIn" options={{ headerShown: false, tabBarVisible: false }} component={
-              SignIn
-            }
-            />
-            <Stack.Screen name="PlaylistView" options={{ headerShown: false, tabBarVisible: false }} component={
-              PlaylistView
-            }
-            />
-            <Stack.Screen name="Player" options={{ headerShown: false, tabBarVisible: false }} component={
-              Player
-            }
-            />
-            <Stack.Screen name="About" options={{ headerShown: false, tabBarVisible: false }} component={
-              About
-            }
-            />
-            <Stack.Screen name="Statistics" options={{ headerShown: false, tabBarVisible: false }} component={
-              Statistics
-            }
-            />
-            <Stack.Screen name="MainPage" options={{ headerShown: false }} component={
-              MainPage
-            }
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </SafeAreaProvider>
-    </PaperProvider>
+            <Stack.Navigator initialRouteName='MainPage'>
+              <Stack.Screen name="SignIn" options={{ headerShown: false, tabBarVisible: false }} component={
+                SignIn
+              }
+              />
+              <Stack.Screen name="PlaylistView" options={{ headerShown: false, tabBarVisible: false }} component={
+                PlaylistView
+              }
+              />
+              <Stack.Screen name="Player" options={{ headerShown: false, tabBarVisible: false }} component={
+                Player
+              }
+              />
+              <Stack.Screen name="About" options={{ headerShown: false, tabBarVisible: false }} component={
+                About
+              }
+              />
+              <Stack.Screen name="Statistics" options={{ headerShown: false, tabBarVisible: false }} component={
+                Statistics
+              }
+              />
+              <Stack.Screen name="MainPage" options={{ headerShown: false }} component={
+                MainPage
+              }
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }

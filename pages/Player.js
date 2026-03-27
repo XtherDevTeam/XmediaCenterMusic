@@ -4,7 +4,6 @@ import {
   Image,
   ImageBackground,
   ScrollView,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
   Dimensions,
@@ -12,7 +11,9 @@ import {
 import {
   adaptNavigationTheme,
   Appbar,
+  Button,
   DataTable,
+  Dialog,
   Icon,
   IconButton,
   PaperProvider,
@@ -20,6 +21,7 @@ import {
   Surface,
   Text,
   withTheme,
+  TouchableRipple
 } from 'react-native-paper';
 import TrackPlayer, {
   RepeatMode,
@@ -40,11 +42,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomDrawer from '../components/BottomDrawer';
 import LyricView from '../components/LyricView';
 import Message from '../components/Message';
+import QueueDrawer from '../components/QueueDrawer';
 import * as Api from '../shared/api';
-import { get_lyric_for, parse_lrc } from '../shared/lyricsManager';
+import { get_lyric_for, parse_lrc, invalidate_lyric_cache } from '../shared/lyricsManager';
 import { formatDuraton } from '../shared/playerBackend';
 import * as storage from '../shared/storage';
 import { mdTheme } from '../shared/styles';
+import * as Clipboard from 'expo-clipboard';
 
 const { width, height } = Dimensions.get('window');
 
@@ -54,6 +58,11 @@ const { LightTheme, DarkTheme } = adaptNavigationTheme({
 });
 
 const MORE_ICON = 'dots-vertical';
+
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
+
+
 
 const Player = ({ navigation, route }) => {
   let [repeatMode, setRepeatMode] = React.useState({
@@ -72,7 +81,71 @@ const Player = ({ navigation, route }) => {
   let [showLyrics, setShowLyrics] = React.useState(false)
   let [lyrics, setLyrics] = React.useState([])
   const [lyricViewHeight, setLyricViewHeight] = React.useState(height * 0.6)
+  const [lyricDialogVisible, setLyricDialogVisible] = React.useState(false)
+  const [selectedLyric, setSelectedLyric] = React.useState(null)
   let currentTrack = useActiveTrack()
+  const translateX = useSharedValue(0);
+  const [neighbors, setNeighbors] = React.useState({ prev: null, next: null });
+  const lyricsOpacity = useSharedValue(0);
+
+  React.useEffect(() => {
+    lyricsOpacity.value = withTiming(showLyrics ? 1 : 0, { duration: 100 });
+  }, [showLyrics]);
+
+  React.useEffect(() => {
+    const updateNeighbors = async () => {
+      const queue = await TrackPlayer.getQueue();
+      const index = await TrackPlayer.getActiveTrackIndex();
+      if (index !== undefined && index !== null) {
+        setNeighbors({
+          prev: index > 0 ? queue[index - 1] : null,
+          next: index < queue.length - 1 ? queue[index + 1] : null,
+        });
+      }
+    };
+    updateNeighbors();
+  }, [currentTrack]);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+    })
+    .onEnd((event) => {
+      if (event.translationX < -width / 4 || event.velocityX < -500) {
+        if (neighbors.next) {
+          runOnJS(TrackPlayer.skipToNext)();
+          translateX.value = withSpring(-width);
+        } else {
+          translateX.value = withSpring(0);
+        }
+      } else if (event.translationX > width / 4 || event.velocityX > 500) {
+        if (neighbors.prev) {
+          runOnJS(TrackPlayer.skipToPrevious)();
+          translateX.value = withSpring(width);
+        } else {
+          translateX.value = withSpring(0);
+        }
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value - width }],
+  }));
+
+  const artworkOpacityStyle = useAnimatedStyle(() => ({
+    opacity: 1 - lyricsOpacity.value,
+  }));
+
+  const lyricsOpacityStyle = useAnimatedStyle(() => ({
+    opacity: lyricsOpacity.value,
+  }));
+
+  React.useEffect(() => {
+    translateX.value = 0;
+  }, [currentTrack]);
 
   React.useEffect(() => {
     setCurrentProgressStr([formatDuraton(currentProgress.position), '-' + formatDuraton(currentProgress.duration - currentProgress.position)])
@@ -164,6 +237,35 @@ const Player = ({ navigation, route }) => {
     })
   }
 
+  const handleLyricLongPress = (line) => {
+    setSelectedLyric(line)
+    setLyricDialogVisible(true)
+  }
+
+  const copyLyric = async () => {
+    if (selectedLyric) {
+      await Clipboard.setStringAsync(selectedLyric.text)
+      setLyricDialogVisible(false)
+      setMessageText("Lyric copied to clipboard")
+      setMessageState(true)
+    }
+  }
+
+  const invalidateLyricCache = () => {
+    if (currentTrack) {
+      setLyricDialogVisible(false)
+      setMessageText("Lyric cache invalidated. Re-fetching...")
+      setMessageState(true)
+      invalidate_lyric_cache(currentTrack.title, currentTrack.album, currentTrack.artist).then(lrc => {
+        if (lrc) {
+          setLyrics(parse_lrc(lrc.lrc))
+        } else {
+          setLyrics([])
+        }
+      })
+    }
+  }
+
   let theme = mdTheme()
   const insets = useSafeAreaInsets()
 
@@ -177,51 +279,93 @@ const Player = ({ navigation, route }) => {
           <View style={{ flex: 1, backgroundColor: theme.dark ? 'rgba(0, 0, 0, 0.65)' : 'rgba(255, 255, 255, 0.65)', paddingBottom: insets.top }}>
             <Appbar.Header style={{ backgroundColor: 'rgba(0, 0, 0, 0)' }}>
               <Appbar.BackAction onPress={() => navigation.goBack()} />
-              <Appbar.Content title="Player"></Appbar.Content>
+              <Appbar.Content title=""></Appbar.Content>
             </Appbar.Header>
             <TouchableWithoutFeedback onPress={() => { }} accessible={false}>
               <>
                 {/* Player content */}
-                <View
-                  style={{ flex: 1, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}
-                  onLayout={(e) => setLyricViewHeight(e.nativeEvent.layout.height)}
-                >
-                  {!showLyrics ? (
-                    <>
-                      <TouchableOpacity
-                        onPress={() => setShowLyrics(true)}
-                        activeOpacity={0.8}
-                        style={{ width: '80%', alignItems: 'center' }}
-                      >
-                        <Surface elevation={4} style={{ width: '100%', borderRadius: theme.roundness / 0.35 }}>
-                          <Image
-                            source={{ uri: currentTrack.artwork }}
-                            style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
+                <GestureDetector gesture={panGesture}>
+                  <View 
+                    style={{ flex: 1, width: width, overflow: 'hidden' }}
+                    onLayout={(e) => setLyricViewHeight(e.nativeEvent.layout.height)}
+                  >
+                    <Animated.View style={[{ flexDirection: 'row', width: width * 3, flex: 1 }, animatedStyle]}>
+                      {/* Previous Track Slot */}
+                      <View style={{ width: width, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}>
+                        {neighbors.prev && (
+                          <>
+                            <Surface elevation={4} style={{ width: '80%', borderRadius: theme.roundness / 0.35 }}>
+                              <Image
+                                source={{ uri: neighbors.prev.artwork }}
+                                style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
+                              />
+                            </Surface>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16, opacity: 0.5 }} numberOfLines={1}>
+                              {neighbors.prev.title}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+
+                      {/* Current Track Slot */}
+                      <View style={{ width: width, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}>
+                        <Animated.View 
+                          style={[{ width: '100%', alignItems: 'center', position: 'absolute' }, artworkOpacityStyle]}
+                          pointerEvents={showLyrics ? 'none' : 'auto'}
+                        >
+                          <TouchableRipple
+                            onPress={() => setShowLyrics(true)}
+                            style={{ width: '80%', alignItems: 'center' }}
+                          >
+                            <Surface elevation={4} style={{ width: '100%', borderRadius: theme.roundness / 0.35 }}>
+                              <Image
+                                source={{ uri: currentTrack.artwork }}
+                                style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
+                              />
+                            </Surface>
+                          </TouchableRipple>
+                          <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16 }} numberOfLines={1}>
+                            {currentTrack.title == '' ? '<unknown>' : currentTrack.title}
+                          </Text>
+                          <Text style={{ fontSize: 16, color: theme.colors.secondary, marginTop: 4 }} numberOfLines={1}>
+                            {currentTrack.artist == '' ? '<unknown>' : currentTrack.artist}
+                          </Text>
+                        </Animated.View>
+
+                        <Animated.View 
+                          style={[{ width: '100%', height: '100%', flex: 1 }, lyricsOpacityStyle]}
+                          pointerEvents={showLyrics ? 'auto' : 'none'}
+                        >
+                          <LyricView
+                            lyrics={lyrics}
+                            currentTime={currentProgress.position}
+                            width={width - 40}
+                            height={lyricViewHeight}
+                            onLyricPress={() => setShowLyrics(false)}
+                            onLyricLongPress={handleLyricLongPress}
                           />
-                        </Surface>
-                      </TouchableOpacity>
-                      <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16 }} numberOfLines={1}>
-                        {currentTrack.title == '' ? '<unknown>' : currentTrack.title}
-                      </Text>
-                      <Text style={{ fontSize: 16, color: theme.colors.secondary, marginTop: 4 }} numberOfLines={1}>
-                        {currentTrack.artist == '' ? '<unknown>' : currentTrack.artist}
-                      </Text>
-                    </>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => setShowLyrics(false)}
-                      activeOpacity={1}
-                      style={{ width: '100%', flex: 1 }}
-                    >
-                      <LyricView
-                        lyrics={lyrics}
-                        currentTime={currentProgress.position}
-                        width={width - 40}
-                        height={lyricViewHeight}
-                      />
-                    </TouchableOpacity>
-                  )}
-                </View>
+                        </Animated.View>
+                      </View>
+
+                      {/* Next Track Slot */}
+                      <View style={{ width: width, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }}>
+                        {neighbors.next && (
+                          <>
+                            <Surface elevation={4} style={{ width: '80%', borderRadius: theme.roundness / 0.35 }}>
+                              <Image
+                                source={{ uri: neighbors.next.artwork }}
+                                style={{ width: '100%', aspectRatio: 1, borderRadius: 10 }}
+                              />
+                            </Surface>
+                            <Text style={{ fontSize: 20, fontWeight: 'bold', marginTop: 16, opacity: 0.5 }} numberOfLines={1}>
+                              {neighbors.next.title}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+                    </Animated.View>
+                  </View>
+                </GestureDetector>
 
                 <View style={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 10 }}>
                   {/* Progress bar */}
@@ -303,26 +447,27 @@ const Player = ({ navigation, route }) => {
                 </View>
 
 
-                <BottomDrawer drawerTitle="Play queue" onClose={() => { setPlayQueueState(false) }} state={playQueueState}>
-                  <ScrollView>
-                    <DataTable>
-                      <DataTable.Header>
-                        <DataTable.Title>Title</DataTable.Title>
-                        <DataTable.Title numeric>Artist</DataTable.Title>
-                      </DataTable.Header>
-                      {currentQueue.map((item, idx) => (
-                        <DataTable.Row key={idx} onPress={() => {
-                          TrackPlayer.skip(idx).then(() => { TrackPlayer.play() })
-                        }}>
-                          <DataTable.Cell>{item.title}</DataTable.Cell>
-                          <DataTable.Cell numeric>{item.artist}</DataTable.Cell>
-                        </DataTable.Row>
-                      ))}
-                    </DataTable>
-                  </ScrollView>
-                </BottomDrawer>
+                <QueueDrawer 
+                  visible={playQueueState} 
+                  onClose={() => setPlayQueueState(false)} 
+                  queue={currentQueue}
+                  onQueueUpdate={(updatedQueue) => setCurrentQueue(updatedQueue)}
+                />
                 <Portal>
                   <Message timeout={5000} style={{ marginBottom: 64 }} state={messageState} onStateChange={() => { setMessageState(false) }} icon="alert-circle" text={messageText} />
+                  <Dialog visible={lyricDialogVisible} onDismiss={() => setLyricDialogVisible(false)}>
+                    <Dialog.Title>Lyric Actions</Dialog.Title>
+                    <Dialog.Content>
+                      <Text variant="bodyMedium">{selectedLyric?.text || "No lyric selected"}</Text>
+                    </Dialog.Content>
+                    <Dialog.Actions >
+                      <View style={{ flexDirection: 'column', alignItems: 'flex-end' }}>
+                        <Button onPress={copyLyric}>Copy to Clipboard</Button>
+                        <Button onPress={invalidateLyricCache}>Invalidate Lyric Cache</Button>
+                        <Button onPress={() => setLyricDialogVisible(false)}>Cancel</Button>
+                      </View>
+                    </Dialog.Actions>
+                  </Dialog>
                 </Portal>
               </>
             </TouchableWithoutFeedback >
