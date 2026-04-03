@@ -32,6 +32,10 @@ function refreshStorageUrl() {
   ])
 }
 
+function getStorageUrl() {
+  return storageUrl
+}
+
 refreshStorageUrl()
 
 function makeResult(ok, data) {
@@ -372,6 +376,7 @@ export {
   getShareLinkFilePath,
   getShareLinkPath,
   getSongArtworkPath,
+  getStorageUrl,
   increasePlaylistPlayCount,
   increaseSongPlayCount,
   info,

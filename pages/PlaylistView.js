@@ -38,6 +38,7 @@ import * as playerBackend from '../shared/playerBackend';
 
 import * as storage from '../shared/storage';
 import { mdTheme } from '../shared/styles';
+import { useIsConnected, useCacheStatus } from '../shared/hooks';
 
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
@@ -58,6 +59,10 @@ const PlaylistView = ({ navigation, route }) => {
   const [messageText, setMessageText] = React.useState("")
   let [playlist, setPlaylist] = React.useState(route.params.playlist)
   let [playlistSongs, setPlaylistSongs] = React.useState([])
+  
+  const isConnected = useIsConnected();
+  const cachedIds = useCacheStatus(playlistSongs);
+
   let [pathInputVisible, setPathInputVisible] = React.useState(false)
   let [menuVisible, setMenuVisible] = React.useState(false)
   let [defaultMusicStoragePath, setDefaultMusicStoragePath] = React.useState('/')
@@ -253,17 +258,39 @@ const PlaylistView = ({ navigation, route }) => {
                     <DataTable.Title>Title</DataTable.Title>
                     <DataTable.Title numeric>Artist</DataTable.Title>
                   </DataTable.Header>
-                  {playlistSongs.map((item, idx) => (
-                    <DataTable.Row key={item.id} onPress={() => {
-                      playerBackend.setCurrentTrack(playlist.id, rntpStylePlaylist.current, idx, true)
-                      navigation.navigate('Player', {})
-                    }} onLongPress={() => {
-                      setDeleteSongDialogState({ item, state: true })
-                    }}>
-                      <DataTable.Cell>{item.info.title}</DataTable.Cell>
-                      <DataTable.Cell numeric>{item.info.artist}</DataTable.Cell>
-                    </DataTable.Row>
-                  ))}
+                  {playlistSongs.map((item, idx) => {
+                    const isCached = cachedIds.has(item.id.toString());
+                    const isAvailable = isConnected || isCached;
+                    
+                    return (
+                      <DataTable.Row 
+                        key={item.id} 
+                        style={{ opacity: isAvailable ? 1 : 0.5 }}
+                        onPress={() => {
+                          if (!isAvailable) {
+                            setMessageText("Offline and no cache available for this song.");
+                            setMessageState(true);
+                            return;
+                          }
+                          playerBackend.setCurrentTrack(playlist.id, rntpStylePlaylist.current, idx, true)
+                          navigation.navigate('Player', {})
+                        }} 
+                        onLongPress={() => {
+                          setDeleteSongDialogState({ item, state: true })
+                        }}
+                      >
+                        <DataTable.Cell>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text>{item.info.title}</Text>
+                            {(isConnected && isCached) && (
+                              <Icon source="check-circle-outline" size={16} color={theme.colors.primary} />
+                            )}
+                          </View>
+                        </DataTable.Cell>
+                        <DataTable.Cell numeric>{item.info.artist}</DataTable.Cell>
+                      </DataTable.Row>
+                    );
+                  })}
                 </DataTable>
               </Card>
             </ScrollView>

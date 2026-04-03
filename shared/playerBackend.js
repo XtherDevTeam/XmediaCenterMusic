@@ -2,6 +2,7 @@ import rntp, { State, Capability, AppKilledPlaybackBehavior, IOSCategory, IOSCat
 import playbackService from './playbackService'
 import * as storage from './storage'
 import * as Api from './api'
+import * as musicCacheManager from './musicCacheManager'
 
 
 console.log("[PlayerBackend] Loading module...");
@@ -59,7 +60,14 @@ export async function loadPlaybackState() {
     storage.inquireItem('playback-list', async (ok, list) => {
       if (ok && Array.isArray(list) && list.length > 0) {
         console.log(`[PlayerBackend] Restoring playback list with ${list.length} tracks`)
-        await rntp.setQueue(list)
+        
+        // Resolve playable URLs for restored tracks
+        const resolvedList = await Promise.all(list.map(async (t) => ({
+          ...t,
+          url: await musicCacheManager.resolvePlayableUrl(t)
+        })));
+        
+        await rntp.setQueue(resolvedList)
 
         storage.inquireItem('last-played-index', async (okIndex, index) => {
           const targetIndex = okIndex ? index : 0
@@ -79,9 +87,13 @@ export async function loadPlaybackState() {
   })
 }
 
-export function setPlayQueue(songs) {
+export async function setPlayQueue(songs) {
   savePlaybackList(songs)
-  return rntp.setQueue(songs)
+  const resolvedSongs = await Promise.all(songs.map(async (s) => ({
+    ...s,
+    url: await musicCacheManager.resolvePlayableUrl(s)
+  })));
+  return rntp.setQueue(resolvedSongs)
 }
 
 export function formatDuraton(time) {
@@ -110,7 +122,7 @@ export function formatDuraton(time) {
   return time;
 }
 
-export function setCurrentTrack(pid, songs, index, playAfter) {
+export async function setCurrentTrack(pid, songs, index, playAfter) {
   // Persistence
   savePlaybackList(songs)
   saveCurrentIndex(index)
@@ -125,31 +137,41 @@ export function setCurrentTrack(pid, songs, index, playAfter) {
         }
       }
     })
-    updateCurrentPlayingPlaylist(pid)
+  updateCurrentPlayingPlaylist(pid)
   }
 
-  return rntp.setQueue(songs).then(() => {
-    return rntp.skip(index).then(() => {
-      if (playAfter) {
-        return play().then(() => {
-          rntp.getPlaybackState().then((v) => {
-            console.log(v)
-          })
-        }).catch((reason) => {
-          console.log(reason)
-        })
-      }
-    })
-  })
+  const resolvedSongs = await Promise.all(songs.map(async (s) => ({
+    ...s,
+    url: await musicCacheManager.resolvePlayableUrl(s)
+  })));
+
+  await rntp.setQueue(resolvedSongs);
+  await rntp.skip(index);
+  
+  if (playAfter) {
+    try {
+      await play();
+      const state = await rntp.getPlaybackState();
+      console.log(state);
+    } catch (reason) {
+      console.log(reason);
+    }
+  }
 }
 
-export function addTracksToQueue(newTracks) {
+export async function addTracksToQueue(newTracks) {
   return new Promise((resolve) => {
     storage.inquireItem('playback-list', async (ok, list) => {
       const currentList = ok ? list : []
       const updatedList = [...currentList, ...newTracks]
       savePlaybackList(updatedList)
-      await rntp.add(newTracks)
+      
+      const resolvedNewTracks = await Promise.all(newTracks.map(async (t) => ({
+        ...t,
+        url: await musicCacheManager.resolvePlayableUrl(t)
+      })));
+
+      await rntp.add(resolvedNewTracks)
       resolve(updatedList)
     })
   })
