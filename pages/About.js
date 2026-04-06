@@ -66,7 +66,7 @@ const About = ({ navigation, route }) => {
                   <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <Avatar.Image source={require('../assets/kiana.png')} size={56}></Avatar.Image>
                     <Text variant="titleLarge">XmediaCenter 2 Music</Text>
-                    <Text variant="bodyMedium" style={{ textAlign: 'center' }}>Version: 1.0.0(1)</Text>
+                    <Text variant="bodyMedium" style={{ textAlign: 'center' }}>Version: 2.0.0(1)</Text>
                     <Text variant="bodyMedium" style={{ textAlign: 'center' }}>Made with ❤️ by Jerry Chou and Naganohara Yoimiya</Text>
                   </View>
                   <View style={{ marginTop: 10 }}>

@@ -5,6 +5,17 @@ import * as storage from './storage';
 let storageUrl = ""
 let session = ""
 
+let magic_number_after_fetch = new Date().getTime()
+
+function get_magic_number() {
+  // if exceeds one day, return true
+  if(new Date().getTime() - magic_number_after_fetch > 1000 * 60 * 60 * 24) {
+    magic_number_after_fetch = new Date().getTime()
+    return magic_number_after_fetch
+  }
+  return magic_number_after_fetch
+}
+
 
 
 function refreshStorageUrl() {
@@ -139,7 +150,7 @@ function getDownloadPath(path) {
 }
 
 function getPlaylistArtworkPath(pid) {
-  return `${storageUrl}/api/xms/v1/music/playlist/${pid}/artwork`
+  return `${storageUrl}/api/xms/v1/music/playlist/${pid}/artwork?t=${get_magic_number()}`
 }
 
 function getSongArtworkPath(sid) {
